@@ -5,17 +5,19 @@ Reviving an old Woosim serial thermal receipt printer (salvaged from a photoboot
 ## Status
 
 - [x] Printer talks over RS-232 (COM3, 9600 baud) from a Windows PC via a USB-to-serial adapter.
-- [x] C# console app drives it with ESC/POS commands (text, bold, sizing, justification, cut).
+- [x] C# console app drives it with ESC/POS commands (text, bold, sizing, justification, cut), behind an `IReceiptPrinter` abstraction so the transport is swappable.
 - [x] Daily briefing printout: date, weather, calendar (today + upcoming), and a to-do list.
 - [x] To-do list sourced from Apple Reminders, via an iOS Shortcut pushing to a Home Assistant webhook.
 - [x] Calendar events sourced from Home Assistant's `caldav` integration (iCloud calendar).
-- [ ] Move the printer off the PC onto a standalone ESP32 (in progress - parts ordered).
+- [ ] Move the printer off the PC onto a standalone ESP32 (in progress - parts ordered). `NetworkWoosimPrinter` is a stub waiting on the ESP32 firmware; see [docs/HARDWARE.md](docs/HARDWARE.md).
 - [ ] Home Assistant automations that print receipts directly (doorbell log, notifications, etc).
 
 ## Project layout
 
 - [`src/ReceiptPrinter`](src/ReceiptPrinter) - the C# console app.
-  - [`WoosimPrinter.cs`](src/ReceiptPrinter/WoosimPrinter.cs) - minimal ESC/POS driver over a serial port.
+  - [`IReceiptPrinter.cs`](src/ReceiptPrinter/IReceiptPrinter.cs) - the printer abstraction (`Justification`/`CutMode` enums + interface) that the rest of the app codes against.
+  - [`SerialWoosimPrinter.cs`](src/ReceiptPrinter/SerialWoosimPrinter.cs) - ESC/POS driver over a serial port (the one actually in use today).
+  - [`NetworkWoosimPrinter.cs`](src/ReceiptPrinter/NetworkWoosimPrinter.cs) - **TODO, not implemented** - will drive a printer connected to a standalone ESP32 over WiFi/HTTP.
   - [`DailyBriefing.cs`](src/ReceiptPrinter/DailyBriefing.cs) - builds and prints the daily briefing receipt.
   - [`HomeAssistantTodos.cs`](src/ReceiptPrinter/HomeAssistantTodos.cs) / [`HomeAssistantCalendar.cs`](src/ReceiptPrinter/HomeAssistantCalendar.cs) - pull data from a Home Assistant instance's REST API.
   - [`AppleReminders.cs`](src/ReceiptPrinter/AppleReminders.cs) - a CalDAV client for iCloud Reminders (kept as a fallback/reference; see [docs/HARDWARE.md](docs/HARDWARE.md#notes--gotchas) for why it doesn't see most real reminders lists).
@@ -26,9 +28,14 @@ Reviving an old Woosim serial thermal receipt printer (salvaged from a photoboot
 
 ```bash
 cd src/ReceiptPrinter
-dotnet run -- test COM3 9600        # basic ESC/POS test print
-dotnet run -- briefing COM3 9600    # the daily briefing
-dotnet run -- reminders-debug       # lists Apple Reminders CalDAV lists + contents, for debugging
+
+# dotnet run -- <command> [printer-type] [printer-args...]
+dotnet run -- test                          # basic ESC/POS test print, serial/COM3/9600 by default
+dotnet run -- test serial COM3 9600         # same, explicit
+dotnet run -- test network printer.local    # TODO: not implemented yet - throws until the ESP32 firmware exists
+
+dotnet run -- briefing                      # the daily briefing, serial by default
+dotnet run -- reminders-debug               # lists Apple Reminders CalDAV lists + contents, for debugging
 ```
 
 The `briefing` command auto-generates local config files on first run (`briefing-config.json`, `ha-config.json`, `reminders-config.json`, `todo.txt`) next to the built executable. These contain location coordinates, Home Assistant tokens, and Apple app-specific passwords - **they are git-ignored and must never be committed.**

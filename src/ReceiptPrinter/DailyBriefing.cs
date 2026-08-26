@@ -13,14 +13,14 @@ public static class DailyBriefing
     private record RemindersConfig(string AppleId, string AppSpecificPassword, string ListName);
     private record HaConfig(string BaseUrl, string Token, string EntityId, string? AttributeName = null);
 
-    public static async Task PrintAsync(WoosimPrinter printer)
+    public static async Task PrintAsync(IReceiptPrinter printer)
     {
         var config = LoadConfig();
         var weather = await GetWeatherAsync(config);
         var todos = await LoadTodosAsync();
         var (today, upcoming) = await LoadCalendarAsync();
 
-        printer.SetJustification(WoosimPrinter.Justification.Center);
+        printer.SetJustification(Justification.Center);
         printer.SetTextSize(2, 2);
         printer.SetBold(true);
         printer.Line(DateTime.Now.ToString("dddd"));
@@ -29,7 +29,7 @@ public static class DailyBriefing
         printer.Line(DateTime.Now.ToString("MMMM d, yyyy"));
         printer.Feed(1);
 
-        printer.SetJustification(WoosimPrinter.Justification.Left);
+        printer.SetJustification(Justification.Left);
         printer.Line(new string('-', 32));
         printer.Line(weather ?? "Weather unavailable");
         printer.Line(new string('-', 32));

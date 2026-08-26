@@ -4,16 +4,16 @@ using System.Text;
 namespace ReceiptPrinter;
 
 /// <summary>
-/// Minimal ESC/POS driver for Woosim serial receipt printers.
+/// Minimal ESC/POS driver for a Woosim receipt printer connected directly over serial (RS-232/USB-serial).
 /// </summary>
-public sealed class WoosimPrinter : IDisposable
+public sealed class SerialWoosimPrinter : IReceiptPrinter
 {
     private const byte ESC = 0x1B;
     private const byte GS = 0x1D;
 
     private readonly SerialPort _serial;
 
-    public WoosimPrinter(string portName, int baudRate = 9600)
+    public SerialWoosimPrinter(string portName, int baudRate = 9600)
     {
         _serial = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One)
         {
@@ -26,7 +26,6 @@ public sealed class WoosimPrinter : IDisposable
 
     public void Close() => _serial.Close();
 
-    /// <summary>Resets the printer to its power-on defaults.</summary>
     public void Initialize() => Send(ESC, (byte)'@');
 
     public void Text(string text)
@@ -44,8 +43,6 @@ public sealed class WoosimPrinter : IDisposable
             Send((byte)'\n');
     }
 
-    public enum Justification : byte { Left = 0, Center = 1, Right = 2 }
-
     public void SetJustification(Justification justification) =>
         Send(ESC, (byte)'a', (byte)justification);
 
@@ -55,7 +52,6 @@ public sealed class WoosimPrinter : IDisposable
     public void SetUnderline(bool on) =>
         Send(ESC, (byte)'-', (byte)(on ? 1 : 0));
 
-    /// <summary>Width/height multiplier 1x-8x for the following text.</summary>
     public void SetTextSize(int width = 1, int height = 1)
     {
         width = Math.Clamp(width, 1, 8);
@@ -63,8 +59,6 @@ public sealed class WoosimPrinter : IDisposable
         var n = (byte)(((width - 1) << 4) | (height - 1));
         Send(GS, (byte)'!', n);
     }
-
-    public enum CutMode : byte { Full = 0, Partial = 1 }
 
     public void CutPaper(CutMode mode = CutMode.Full) =>
         Send(GS, (byte)'V', (byte)mode);
