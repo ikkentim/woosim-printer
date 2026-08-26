@@ -1,0 +1,19 @@
+# Reference material (manuals, SDKs, old vendor projects) - not part of this project's source
+ref/
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+*.user
+
+# Visual Studio
+.vs/
+*.suo
+*.sdf
+
+# Secrets / local runtime config - these contain tokens, passwords, and personal data.
+# They're normally only ever generated inside bin/, but ignore by name too as a safety net.
+ha-config.json
+reminders-config.json
+briefing-config.json
+todo.txt
