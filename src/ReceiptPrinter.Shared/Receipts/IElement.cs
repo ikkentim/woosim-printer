@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Receipts;
 
 /// <summary>
 /// A single piece of content on a receipt. Printer implementations translate elements into whatever

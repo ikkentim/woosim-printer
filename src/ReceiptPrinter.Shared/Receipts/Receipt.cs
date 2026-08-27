@@ -1,4 +1,4 @@
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Receipts;
 
 /// <summary>
 /// A complete receipt ready to print: its content, and how to cut the paper afterwards.

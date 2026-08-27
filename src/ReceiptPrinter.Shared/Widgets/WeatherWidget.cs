@@ -1,7 +1,9 @@
 using System.Globalization;
 using System.Text.Json;
+using ReceiptPrinter.Configuration;
+using ReceiptPrinter.Receipts;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Widgets;
 
 public sealed class WeatherWidget : IBriefingWidget
 {

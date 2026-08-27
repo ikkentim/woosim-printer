@@ -1,12 +1,14 @@
 using System.Text.Json;
+using ReceiptPrinter.Configuration;
+using ReceiptPrinter.Reminders;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Cli;
 
 public static class RemindersDebug
 {
     public static async Task RunAsync()
     {
-        var path = Path.Combine(AppContext.BaseDirectory, "reminders-config.json");
+        var path = ConfigPaths.Combine("reminders-config.json");
         if (!File.Exists(path))
         {
             Console.WriteLine("reminders-config.json not found - run the 'briefing' command once first to generate it.");

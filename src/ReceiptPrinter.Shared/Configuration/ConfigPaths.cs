@@ -1,4 +1,4 @@
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Configuration;
 
 /// <summary>
 /// Resolves where local config/state files (ha-config.json, todo.txt, todo-note-store.json, ...) live.

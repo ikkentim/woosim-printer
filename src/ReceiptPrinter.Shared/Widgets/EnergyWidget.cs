@@ -1,4 +1,8 @@
-namespace ReceiptPrinter;
+using ReceiptPrinter.Configuration;
+using ReceiptPrinter.HomeAssistant;
+using ReceiptPrinter.Receipts;
+
+namespace ReceiptPrinter.Widgets;
 
 public sealed class EnergyWidget : IBriefingWidget
 {

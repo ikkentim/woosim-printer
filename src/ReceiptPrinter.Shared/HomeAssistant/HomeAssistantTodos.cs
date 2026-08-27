@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.HomeAssistant;
 
 /// <summary>
 /// Reads a todo list stored in a Home Assistant entity, populated via a webhook-triggered template sensor.

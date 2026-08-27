@@ -1,8 +1,9 @@
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using ReceiptPrinter.Receipts;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Printers.Network;
 
 /// <summary>
 /// Drives a Woosim printer over the network by POSTing the Receipt as JSON to a small HTTP service

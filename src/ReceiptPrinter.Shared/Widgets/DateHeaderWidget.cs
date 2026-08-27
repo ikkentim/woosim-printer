@@ -1,6 +1,7 @@
 using System.Globalization;
+using ReceiptPrinter.Receipts;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Widgets;
 
 public sealed class DateHeaderWidget : IBriefingWidget
 {

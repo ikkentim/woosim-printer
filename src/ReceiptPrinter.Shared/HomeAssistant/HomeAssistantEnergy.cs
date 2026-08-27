@@ -2,7 +2,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.HomeAssistant;
 
 public record EnergySummary(double? ProducedKwh, double? GridImportKwh, double? GridExportKwh, double? GasM3);
 

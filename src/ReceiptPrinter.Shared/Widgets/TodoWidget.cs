@@ -1,4 +1,9 @@
-namespace ReceiptPrinter;
+using ReceiptPrinter.Configuration;
+using ReceiptPrinter.HomeAssistant;
+using ReceiptPrinter.Receipts;
+using ReceiptPrinter.Reminders;
+
+namespace ReceiptPrinter.Widgets;
 
 public sealed class TodoWidget : IBriefingWidget
 {

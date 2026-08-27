@@ -1,0 +1,28 @@
+# https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
+name: "Receipt Printer Service"
+version: "1.0.0"
+slug: receiptprinter_service
+url: https://github.com/ikkentim/woosim-printer
+description: >-
+  Daily briefing / to-do scheduler for a Woosim receipt printer - prints
+  over the network to ReceiptPrinter.NetworkSerialService, which runs on
+  the PC with the actual printer wired up over serial.
+arch:
+  - amd64
+  - aarch64
+init: false
+image: ghcr.io/ikkentim/ha-{arch}-receiptprinter-service
+startup: application
+boot: auto
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: HTTP API (POST /print, /briefing/trigger, /todos/check)
+options:
+  printer_network_host: "printer-pc.local:5251"
+  scheduled_hour: 7
+  scheduled_minute: 0
+schema:
+  printer_network_host: str
+  scheduled_hour: int(0,23)
+  scheduled_minute: int(0,59)

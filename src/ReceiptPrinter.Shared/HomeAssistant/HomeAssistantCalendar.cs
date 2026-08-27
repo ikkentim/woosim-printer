@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.HomeAssistant;
 
 public record CalendarEventInfo(DateTime Start, bool AllDay, string Summary);
 

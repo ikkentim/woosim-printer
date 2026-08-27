@@ -1,4 +1,6 @@
-namespace ReceiptPrinter;
+using ReceiptPrinter.Receipts;
+
+namespace ReceiptPrinter.Widgets;
 
 /// <summary>
 /// Builds the daily briefing receipt by running each widget in order and collecting their elements.

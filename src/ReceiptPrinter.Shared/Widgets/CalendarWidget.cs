@@ -1,6 +1,9 @@
 using System.Globalization;
+using ReceiptPrinter.Configuration;
+using ReceiptPrinter.HomeAssistant;
+using ReceiptPrinter.Receipts;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Widgets;
 
 public sealed class CalendarWidget : IBriefingWidget
 {

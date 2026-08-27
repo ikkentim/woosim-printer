@@ -1,6 +1,6 @@
 using System.Text.Json;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Configuration;
 
 public record LocationConfig(double Latitude, double Longitude, string LocationName);
 

@@ -1,3 +1,6 @@
+using ReceiptPrinter.Receipts;
+using ReceiptPrinter.Widgets;
+
 namespace ReceiptPrinter.Service;
 
 /// <summary>

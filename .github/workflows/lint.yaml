@@ -1,0 +1,21 @@
+name: Lint add-on
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "0 0 * * 1"
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4.1.2
+
+      - name: Run Home Assistant Add-on Lint
+        uses: frenck/action-addon-linter@v2.15
+        with:
+          path: "."

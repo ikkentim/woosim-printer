@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
-using ReceiptPrinter;
+using ReceiptPrinter.Receipts;
+using ReceiptPrinter.Printers.Serial;
 
 // Stands in for the ESP32 firmware planned in docs/HARDWARE.md. This runs on the PC that has the
 // Woosim printer physically wired up over serial (COM3), and exposes the same tiny HTTP contract

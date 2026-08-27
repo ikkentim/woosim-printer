@@ -4,7 +4,7 @@ using System.Xml.Linq;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Reminders;
 
 /// <summary>
 /// Reads incomplete items from an iCloud Reminders list via CalDAV.

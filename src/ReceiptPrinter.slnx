@@ -1,6 +1,6 @@
 <Solution>
   <Project Path="ReceiptPrinter.CLI/ReceiptPrinter.CLI.csproj" />
-  <Project Path="ReceiptPrinter.Contracts/ReceiptPrinter.Contracts.csproj" />
+  <Project Path="ReceiptPrinter.Shared/ReceiptPrinter.Shared.csproj" />
   <Project Path="ReceiptPrinter.Network/ReceiptPrinter.Network.csproj" />
   <Project Path="ReceiptPrinter.NetworkSerialService/ReceiptPrinter.NetworkSerialService.csproj" />
   <Project Path="ReceiptPrinter.Serial/ReceiptPrinter.Serial.csproj" />

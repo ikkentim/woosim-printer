@@ -1,7 +1,8 @@
 using System.IO.Ports;
 using System.Text;
+using ReceiptPrinter.Receipts;
 
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Printers.Serial;
 
 /// <summary>
 /// Drives a Woosim receipt printer connected directly over serial (RS-232/USB-serial), translating

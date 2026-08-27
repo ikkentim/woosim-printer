@@ -1,4 +1,4 @@
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Receipts;
 
 /// <summary>
 /// A Woosim ESC/POS receipt printer, reachable either directly over serial or (eventually) over the network

@@ -1,4 +1,8 @@
-using ReceiptPrinter;
+using ReceiptPrinter.Cli;
+using ReceiptPrinter.Printers.Network;
+using ReceiptPrinter.Printers.Serial;
+using ReceiptPrinter.Receipts;
+using ReceiptPrinter.Widgets;
 
 // Usage:
 //   dotnet run -- <command> [printer-type] [printer-args...]

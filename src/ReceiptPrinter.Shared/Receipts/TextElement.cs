@@ -1,4 +1,4 @@
-namespace ReceiptPrinter;
+namespace ReceiptPrinter.Receipts;
 
 /// <summary>
 /// A line (or run) of text on a receipt, fully describing its own formatting - each element is

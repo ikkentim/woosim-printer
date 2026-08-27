@@ -1,4 +1,6 @@
-namespace ReceiptPrinter;
+using ReceiptPrinter.Receipts;
+
+namespace ReceiptPrinter.Widgets;
 
 /// <summary>
 /// A self-contained section of the daily briefing receipt. Each widget fetches whatever data it needs

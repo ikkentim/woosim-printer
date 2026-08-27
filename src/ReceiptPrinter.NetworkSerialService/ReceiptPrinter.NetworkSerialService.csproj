@@ -9,7 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ReceiptPrinter.Contracts\ReceiptPrinter.Contracts.csproj" />
+    <ProjectReference Include="..\ReceiptPrinter.Shared\ReceiptPrinter.Shared.csproj" />
     <ProjectReference Include="..\ReceiptPrinter.Serial\ReceiptPrinter.Serial.csproj" />
   </ItemGroup>
 
