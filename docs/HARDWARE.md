@@ -80,3 +80,28 @@ Key safety point: power (12V/2A, pins 6-9) and signal (pins 2/3/5) are **electri
 - **RS-232 pinout** (DE-9, DTE): 1 DCD, 2 RXD, 3 TXD, 4 DTR, 5 GND, 6 DSR, 7 RTS, 8 CTS, 9 RI. The printer's cable repurposes 6/7/8/9 for power, ignoring their usual modem-control meaning.
 - **Apple Reminders + CalDAV**: iCloud exposes Reminders lists over CalDAV, but only the original default list (created before Reminders' CloudKit-based redesign) is actually visible that way. Lists created later - even though they sync fine to iCloud.com and other devices - are invisible to CalDAV entirely. This is a known Apple-side limitation (other CalDAV clients like Thunderbird/DAVx5/BusyCal hit the same wall), not something fixable from our end. `AppleReminders.cs` and the `reminders-debug` command are kept around as a working CalDAV client (useful if you ever *do* want to read the default list, or for reference), but the actual to-do list in the daily briefing is sourced via Home Assistant + an iOS Shortcut instead (see the main README).
 - Home Assistant's `input_text` helper has a hard 255-character cap - too small for more than a handful of to-do items. The to-do list is instead stored as an **attribute** on a trigger-based template sensor (`sensor.todo_list`, `items` attribute), which has no such limit.
+
+## Home Assistant setup: the to-do webhook
+
+The full path is `iPhone Shortcut -> HA webhook -> template sensor -> this app polls the sensor` (see the main README's [to-do list data flow](../README.md#to-do-list-data-flow)). The Home Assistant side is a webhook-triggered template sensor added to `configuration.yaml`:
+
+```yaml
+template:
+  - trigger:
+      - trigger: webhook
+        webhook_id: todo_update
+        local_only: true
+        allowed_methods:
+          - POST
+          - PUT
+    sensor:
+      - name: "Todo List"
+        state: "{{ now() }}"
+        attributes:
+          items: "{{ trigger.json.todos }}"
+```
+
+- `state` is just the last-updated timestamp - the actual list lives in the `items` attribute, since attributes aren't subject to the 255-character state cap.
+- `trigger.json.todos` expects the webhook body to be JSON with a `todos` key, e.g. `{"todos": "Buy milk\nCall dentist\n..."}` - one item per line, which is exactly what an iOS Shortcut's "Combine Text" (newline-separated) produces.
+- The webhook URL is `<ha-base-url>/api/webhook/todo_update` - point the iOS Shortcut's "Get Contents of URL" (POST, JSON body `{"todos": <combined text>}`) at that.
+- After a reload (Settings -> System -> Restart, or Developer Tools -> YAML -> Template Entities), `sensor.todo_list`'s `items` attribute is what `ha-config.json`'s `EntityId`/`AttributeName` should point at (see the main README's config files section).
