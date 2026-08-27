@@ -4,7 +4,7 @@ using ReceiptPrinter;
 //   dotnet run -- <command> [printer-type] [printer-args...]
 //   command:      test | briefing | reminders-debug
 //   printer-type: serial (default) [port=COM3] [baud=9600]
-//                 network           [host]      (TODO: not implemented yet)
+//                 network           [host]      (talks to ReceiptPrinter.NetworkSerialService)
 var command = args.Length > 0 ? args[0] : "test";
 
 if (command == "reminders-debug")
@@ -31,8 +31,8 @@ static IReceiptPrinter CreatePrinter(string[] printerArgs)
     switch (printerType)
     {
         case "network":
-            var host = printerArgs.Length > 1 ? printerArgs[1] : "printer.local";
-            Console.WriteLine($"Using network printer at {host} (TODO: not implemented yet)...");
+            var host = printerArgs.Length > 1 ? printerArgs[1] : "printer.local:5251";
+            Console.WriteLine($"Using network printer at {host}...");
             return new NetworkWoosimPrinter(host);
 
         case "serial":

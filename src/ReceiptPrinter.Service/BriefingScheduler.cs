@@ -14,8 +14,10 @@ public sealed class BriefingScheduler : BackgroundService
         _printer = printer;
         _logger = logger;
 
-        var hour = config.GetValue("Briefing:ScheduledHour", 7);
-        var minute = config.GetValue("Briefing:ScheduledMinute", 0);
+        // scheduled_hour/scheduled_minute come from the HA add-on's options.json when running as an
+        // add-on (see Program.cs); Briefing:ScheduledHour/Minute is the plain appsettings.json fallback.
+        var hour = config.GetValue<int?>("scheduled_hour") ?? config.GetValue("Briefing:ScheduledHour", 7);
+        var minute = config.GetValue<int?>("scheduled_minute") ?? config.GetValue("Briefing:ScheduledMinute", 0);
         _scheduledTime = new TimeSpan(hour, minute, 0);
     }
 

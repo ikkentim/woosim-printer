@@ -15,10 +15,10 @@ public record HaConfig(string BaseUrl, string Token, string EntityId, string? At
 /// </summary>
 public static class BriefingConfig
 {
-    private static readonly string LocationConfigPath = Path.Combine(AppContext.BaseDirectory, "briefing-config.json");
-    private static readonly string HaConfigPath = Path.Combine(AppContext.BaseDirectory, "ha-config.json");
-    private static readonly string RemindersConfigPath = Path.Combine(AppContext.BaseDirectory, "reminders-config.json");
-    private static readonly string TodoPath = Path.Combine(AppContext.BaseDirectory, "todo.txt");
+    private static readonly string LocationConfigPath = ConfigPaths.Combine("briefing-config.json");
+    private static readonly string HaConfigPath = ConfigPaths.Combine("ha-config.json");
+    private static readonly string RemindersConfigPath = ConfigPaths.Combine("reminders-config.json");
+    private static readonly string TodoPath = ConfigPaths.Combine("todo.txt");
 
     public static LocationConfig LoadLocation()
     {

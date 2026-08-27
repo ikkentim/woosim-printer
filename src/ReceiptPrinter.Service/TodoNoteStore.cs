@@ -8,7 +8,7 @@ namespace ReceiptPrinter.Service;
 /// </summary>
 public sealed class TodoNoteStore
 {
-    private readonly string _path = Path.Combine(AppContext.BaseDirectory, "todo-note-store.json");
+    private readonly string _path = ConfigPaths.Combine("todo-note-store.json");
 
     public HashSet<string> Load()
     {

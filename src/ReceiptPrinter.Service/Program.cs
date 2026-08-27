@@ -8,6 +8,11 @@ using ReceiptPrinter.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// When running as a Home Assistant add-on, Supervisor writes the user's configured add-on options to
+// /data/options.json (snake_case keys, per ha-addon/receiptprinter-service/config.yaml) - merge those in
+// so they can override the Printer:*/Briefing:* settings below without rebuilding the image.
+builder.Configuration.AddJsonFile("/data/options.json", optional: true, reloadOnChange: false);
+
 builder.Services.ConfigureHttpJsonOptions(options =>
     options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
@@ -15,10 +20,11 @@ builder.Services.AddSingleton<IReceiptPrinter>(sp =>
 {
     var config = sp.GetRequiredService<IConfiguration>();
     var printerType = config.GetValue("Printer:Type", "serial");
+    var networkHost = config["printer_network_host"] ?? config.GetValue("Printer:NetworkHost", "printer.local")!;
 
     return printerType switch
     {
-        "network" => new NetworkWoosimPrinter(config.GetValue("Printer:NetworkHost", "printer.local")!),
+        "network" => new NetworkWoosimPrinter(networkHost),
         _ => new SerialWoosimPrinter(
             config.GetValue("Printer:Port", "COM3")!,
             config.GetValue("Printer:Baud", 9600)),

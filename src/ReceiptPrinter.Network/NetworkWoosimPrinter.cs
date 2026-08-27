@@ -1,25 +1,41 @@
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+
 namespace ReceiptPrinter;
 
 /// <summary>
-/// TODO: not yet available. Will drive a Woosim printer connected to a standalone ESP32 over WiFi/HTTP,
-/// once the ESP32 firmware exists (see docs/HARDWARE.md for the hardware plan). The intended shape is
-/// to serialize the Receipt's elements and POST them as the request body to e.g. http://{host}/print,
-/// with the ESP32 rendering them (same logic as SerialWoosimPrinter.Render, just running on the ESP32
-/// instead) and forwarding the resulting bytes straight to the printer's UART.
+/// Drives a Woosim printer over the network by POSTing the Receipt as JSON to a small HTTP service
+/// sitting next to the actual printer. Today that's ReceiptPrinter.NetworkSerialService, standing in
+/// for the ESP32 firmware planned in docs/HARDWARE.md; once that firmware exists it just needs to speak
+/// the same tiny wire protocol (POST /print, JSON body) for this class to keep working unchanged.
 /// </summary>
 public sealed class NetworkWoosimPrinter : IReceiptPrinter
 {
-    private readonly string _host;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        Converters = { new JsonStringEnumConverter() },
+    };
 
+    private readonly HttpClient _http;
+
+    /// <param name="host">Host (optionally "host:port") or full base URL of the printer service, e.g.
+    /// "192.168.1.50:5251" or "http://printer-pc.local:5251".</param>
     public NetworkWoosimPrinter(string host)
     {
-        _host = host;
+        var baseUrl = host.Contains("://") ? host : $"http://{host}";
+        _http = new HttpClient
+        {
+            BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/"),
+            Timeout = TimeSpan.FromSeconds(15),
+        };
     }
 
-    public Task PrintAsync(Receipt receipt) => throw new NotImplementedException(
-        $"Network printer at '{_host}' isn't implemented yet - the ESP32 firmware doesn't exist. Use the serial printer for now.");
-
-    public void Dispose()
+    public async Task PrintAsync(Receipt receipt)
     {
+        var response = await _http.PostAsJsonAsync("print", receipt, JsonOptions);
+        response.EnsureSuccessStatusCode();
     }
+
+    public void Dispose() => _http.Dispose();
 }

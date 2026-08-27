@@ -1,0 +1,29 @@
+name: Receipt Printer Service
+version: "1.0.0"
+slug: receiptprinter_service
+description: Daily briefing / to-do scheduler for the Woosim receipt printer, printing over the network to ReceiptPrinter.NetworkSerialService.
+url: https://github.com/ikkentim/woosim-printer
+arch:
+  - aarch64
+  - amd64
+  - armv7
+startup: application
+boot: auto
+init: false
+# Built and pushed separately (see ./Dockerfile) - Supervisor's build context can't reach the sibling
+# projects under src/, so this isn't built in-place from source. Replace with your own pushed tag.
+image: "<your-registry>/receiptprinter-service"
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: HTTP API (POST /print, /briefing/trigger, /todos/check)
+options:
+  printer_network_host: "printer-pc.local:5251"
+  scheduled_hour: 7
+  scheduled_minute: 0
+schema:
+  printer_network_host: str
+  scheduled_hour: int(0,23)
+  scheduled_minute: int(0,59)
+map:
+  - addon_config:rw
