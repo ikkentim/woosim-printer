@@ -5,12 +5,11 @@ using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Widgets;
 
-public sealed class WeatherWidget : IBriefingWidget
+public sealed class WeatherWidget(LocationOptions location) : IBriefingWidget
 {
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
-        var config = BriefingConfig.LoadLocation();
-        var weather = await GetWeatherAsync(config);
+        var weather = await GetWeatherAsync(location);
 
         return
         [
@@ -21,13 +20,13 @@ public sealed class WeatherWidget : IBriefingWidget
         ];
     }
 
-    private static async Task<string?> GetWeatherAsync(LocationConfig config)
+    private static async Task<string?> GetWeatherAsync(LocationOptions location)
     {
         try
         {
             using var http = new HttpClient();
-            var lat = config.Latitude.ToString(CultureInfo.InvariantCulture);
-            var lon = config.Longitude.ToString(CultureInfo.InvariantCulture);
+            var lat = location.Latitude.ToString(CultureInfo.InvariantCulture);
+            var lon = location.Longitude.ToString(CultureInfo.InvariantCulture);
             var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}" +
                       "&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min" +
                       "&timezone=auto";
@@ -42,7 +41,7 @@ public sealed class WeatherWidget : IBriefingWidget
             var tMax = daily.GetProperty("temperature_2m_max")[0].GetDouble();
             var tMin = daily.GetProperty("temperature_2m_min")[0].GetDouble();
 
-            return $"{config.LocationName}: {DescribeWeather(code)}, {temp:0.#}C {Localization.T("weather.now")}\n" +
+            return $"{location.LocationName}: {DescribeWeather(code)}, {temp:0.#}C {Localization.T("weather.now")}\n" +
                    $"{Localization.T("weather.max")}:{tMax:0.#}C {Localization.T("weather.min")}:{tMin:0.#}C";
         }
         catch (Exception ex)

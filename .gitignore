@@ -11,11 +11,9 @@ ref/
 *.suo
 *.sdf
 
-# Secrets / local runtime config - these contain tokens, passwords, and personal data.
-# They're normally only ever generated inside bin/, but ignore by name too as a safety net.
-ha-config.json
-reminders-config.json
-briefing-config.json
-briefing-settings.json
+# Secrets / local runtime config - appsettings.local.json holds tokens/passwords for local (non-HA)
+# runs; todo.txt/todo-note-store.json are runtime content/state. Normally only ever generated inside
+# bin/, but ignore by name too as a safety net.
+appsettings.local.json
 todo.txt
 todo-note-store.json

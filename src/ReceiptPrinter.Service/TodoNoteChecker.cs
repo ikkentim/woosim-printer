@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using ReceiptPrinter.Configuration;
 using ReceiptPrinter.Receipts;
 using ReceiptPrinter.Widgets;
@@ -8,27 +9,20 @@ namespace ReceiptPrinter.Service;
 /// Checks the current to-do list against what's already been printed. Anything new gets its own
 /// little "TODO" note printed; anything that's disappeared from the source is just forgotten (it was
 /// presumably completed and physically thrown away, per the fridge-note workflow this is built for).
-/// Controlled by briefing-settings.json's TodoNotesEnabled (see BriefingConfig.LoadSettings).
+/// Controlled by ReceiptPrinterOptions.Briefing.TodoNotesEnabled.
 /// </summary>
-public sealed class TodoNoteChecker
+public sealed class TodoNoteChecker(TodoNoteStore store, IOptionsMonitor<ReceiptPrinterOptions> options)
 {
-    private readonly TodoNoteStore _store;
-
-    public TodoNoteChecker(TodoNoteStore store)
-    {
-        _store = store;
-    }
-
     public async Task CheckAndPrintAsync(IReceiptPrinter printer)
     {
-        var settings = BriefingConfig.LoadSettings();
-        if (!settings.TodoNotesEnabled)
+        var settings = options.CurrentValue;
+        if (!settings.Briefing.TodoNotesEnabled)
             return;
 
-        Localization.SetLanguage(settings.Language);
+        Localization.SetLanguage(settings.Briefing.Language);
 
-        var current = new HashSet<string>(await TodoWidget.LoadAsync());
-        var alreadyPrinted = _store.Load();
+        var current = new HashSet<string>(await TodoWidget.LoadAsync(settings.HomeAssistant));
+        var alreadyPrinted = store.Load();
 
         var newItems = current.Except(alreadyPrinted).ToList();
 
@@ -37,7 +31,7 @@ public sealed class TodoNoteChecker
 
         // Whatever's no longer in the source (finished, deleted) just drops out here - nothing to print,
         // it simply stops being tracked.
-        _store.Save(current);
+        store.Save(current);
     }
 
     private static Receipt BuildNote(string item)

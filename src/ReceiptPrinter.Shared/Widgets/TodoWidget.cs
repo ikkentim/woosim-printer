@@ -1,15 +1,14 @@
 using ReceiptPrinter.Configuration;
 using ReceiptPrinter.HomeAssistant;
 using ReceiptPrinter.Receipts;
-using ReceiptPrinter.Reminders;
 
 namespace ReceiptPrinter.Widgets;
 
-public sealed class TodoWidget : IBriefingWidget
+public sealed class TodoWidget(HomeAssistantOptions homeAssistant) : IBriefingWidget
 {
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
-        var todos = await LoadAsync();
+        var todos = await LoadAsync(homeAssistant);
         var elements = new List<IElement> { new TextElement(Localization.T("todo.heading"), Bold: true) };
 
         if (todos.Count == 0)
@@ -27,35 +26,22 @@ public sealed class TodoWidget : IBriefingWidget
     }
 
     /// <summary>Loads the current to-do items - exposed for the Service's TODO-note diffing (see docs).</summary>
-    public static async Task<List<string>> LoadAsync()
+    public static async Task<List<string>> LoadAsync(HomeAssistantOptions homeAssistant)
     {
-        var haConfig = BriefingConfig.LoadHa();
-        if (haConfig != null)
+        var connection = HomeAssistantConnection.Resolve(homeAssistant);
+        if (connection != null)
         {
             try
             {
-                return await HomeAssistantTodos.GetAsync(haConfig.BaseUrl, haConfig.Token, haConfig.EntityId, haConfig.AttributeName);
+                return await HomeAssistantTodos.GetAsync(connection.RestBaseUrl, connection.Token,
+                    homeAssistant.TodoEntityId, homeAssistant.TodoAttributeName);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Home Assistant todo fetch failed, falling back: {ex}");
+                Console.WriteLine($"Home Assistant todo fetch failed, falling back to todo.txt: {ex}");
             }
         }
 
-        var remindersConfig = BriefingConfig.LoadReminders();
-        if (remindersConfig != null)
-        {
-            try
-            {
-                return await AppleReminders.GetIncompleteAsync(
-                    remindersConfig.AppleId, remindersConfig.AppSpecificPassword, remindersConfig.ListName);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Apple Reminders fetch failed, falling back to todo.txt: {ex}");
-            }
-        }
-
-        return BriefingConfig.LoadTodoFile();
+        return TodoFile.Load();
     }
 }

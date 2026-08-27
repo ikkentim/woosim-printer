@@ -5,34 +5,32 @@ namespace ReceiptPrinter.Widgets;
 
 /// <summary>
 /// Builds the daily briefing receipt by running each configured widget in order and collecting their
-/// elements. Which widgets run, in what order, and in what language, comes from briefing-settings.json
-/// (see <see cref="BriefingConfig.LoadSettings"/>) - falls back to every widget in the original order.
+/// elements. Which widgets run, in what order, and in what language, comes from ReceiptPrinterOptions.Briefing
+/// - falls back to every widget in the original order.
 /// </summary>
 public static class DailyBriefing
 {
-    private static readonly IReadOnlyDictionary<string, Func<IBriefingWidget>> WidgetFactories =
-        new Dictionary<string, Func<IBriefingWidget>>(StringComparer.OrdinalIgnoreCase)
+    public static async Task<Receipt> BuildAsync(ReceiptPrinterOptions options)
+    {
+        Localization.SetLanguage(options.Briefing.Language);
+
+        var widgetFactories = new Dictionary<string, Func<IBriefingWidget>>(StringComparer.OrdinalIgnoreCase)
         {
             ["DateHeader"] = () => new DateHeaderWidget(),
-            ["Weather"] = () => new WeatherWidget(),
-            ["Calendar"] = () => new CalendarWidget(),
-            ["Todo"] = () => new TodoWidget(),
-            ["Energy"] = () => new EnergyWidget(),
+            ["Weather"] = () => new WeatherWidget(options.Location),
+            ["Calendar"] = () => new CalendarWidget(options.HomeAssistant),
+            ["Todo"] = () => new TodoWidget(options.HomeAssistant),
+            ["Energy"] = () => new EnergyWidget(options.HomeAssistant),
         };
 
-    public static async Task<Receipt> BuildAsync()
-    {
-        var settings = BriefingConfig.LoadSettings();
-        Localization.SetLanguage(settings.Language);
-
-        var order = settings.Widgets is { Count: > 0 } ? settings.Widgets : BriefingSettings.DefaultWidgetOrder;
+        var order = options.Briefing.Widgets is { Count: > 0 } ? options.Briefing.Widgets : BriefingOptions.DefaultWidgetOrder;
 
         var elements = new List<IElement>();
         foreach (var name in order)
         {
-            if (!WidgetFactories.TryGetValue(name, out var factory))
+            if (!widgetFactories.TryGetValue(name, out var factory))
             {
-                Console.WriteLine($"Unknown briefing widget '{name}' in briefing-settings.json, skipping.");
+                Console.WriteLine($"Unknown briefing widget '{name}' in Briefing:Widgets, skipping.");
                 continue;
             }
 

@@ -4,7 +4,7 @@ using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Widgets;
 
-public sealed class CalendarWidget : IBriefingWidget
+public sealed class CalendarWidget(HomeAssistantOptions homeAssistant) : IBriefingWidget
 {
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
@@ -38,17 +38,17 @@ public sealed class CalendarWidget : IBriefingWidget
         return elements;
     }
 
-    private static async Task<(List<CalendarEventInfo> Today, List<CalendarEventInfo> Upcoming)> LoadAsync()
+    private async Task<(List<CalendarEventInfo> Today, List<CalendarEventInfo> Upcoming)> LoadAsync()
     {
-        var haConfig = BriefingConfig.LoadHa();
-        if (haConfig == null)
+        var connection = HomeAssistantConnection.Resolve(homeAssistant);
+        if (connection == null)
             return (new List<CalendarEventInfo>(), new List<CalendarEventInfo>());
 
         try
         {
             var start = DateTime.Today;
             var end = start.AddDays(14);
-            var events = await HomeAssistantCalendar.GetEventsAsync(haConfig.BaseUrl, haConfig.Token, start, end);
+            var events = await HomeAssistantCalendar.GetEventsAsync(connection.RestBaseUrl, connection.Token, start, end);
 
             var today = events.Where(e => e.Start.Date == start).ToList();
             var upcoming = events.Where(e => e.Start.Date > start).ToList();

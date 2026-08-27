@@ -4,7 +4,7 @@ using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Widgets;
 
-public sealed class EnergyWidget : IBriefingWidget
+public sealed class EnergyWidget(HomeAssistantOptions homeAssistant) : IBriefingWidget
 {
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
@@ -27,17 +27,17 @@ public sealed class EnergyWidget : IBriefingWidget
         return elements;
     }
 
-    private static async Task<EnergySummary> LoadAsync()
+    private async Task<EnergySummary> LoadAsync()
     {
-        var haConfig = BriefingConfig.LoadHa();
-        if (haConfig == null)
+        var connection = HomeAssistantConnection.Resolve(homeAssistant);
+        if (connection == null)
             return new EnergySummary(null, null, null, null);
 
         try
         {
-            return await HomeAssistantEnergy.GetYesterdayAsync(haConfig.BaseUrl, haConfig.Token,
-                haConfig.SolarProductionEntityId, haConfig.GridImportEntityIds, haConfig.GridExportEntityIds,
-                haConfig.GasEntityId);
+            return await HomeAssistantEnergy.GetYesterdayAsync(connection.WebSocketUrl, connection.Token,
+                homeAssistant.SolarProductionEntityId, homeAssistant.GridImportEntityIds, homeAssistant.GridExportEntityIds,
+                homeAssistant.GasEntityId);
         }
         catch (Exception ex)
         {

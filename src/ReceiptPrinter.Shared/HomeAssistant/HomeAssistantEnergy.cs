@@ -12,7 +12,11 @@ public record EnergySummary(double? ProducedKwh, double? GridImportKwh, double? 
 /// </summary>
 public static class HomeAssistantEnergy
 {
-    public static async Task<EnergySummary> GetYesterdayAsync(string baseUrl, string token,
+    /// <param name="webSocketUrl">
+    /// The full ws(s):// URL of Home Assistant's WebSocket API - see <see cref="HomeAssistantConnection"/>,
+    /// since this differs between a direct HA URL and Supervisor's add-on proxy.
+    /// </param>
+    public static async Task<EnergySummary> GetYesterdayAsync(string webSocketUrl, string token,
         string? productionEntityId, IReadOnlyList<string>? gridImportEntityIds, IReadOnlyList<string>? gridExportEntityIds,
         string? gasEntityId)
     {
@@ -30,7 +34,7 @@ public static class HomeAssistantEnergy
         if (statisticIds.Length == 0)
             return new EnergySummary(null, null, null, null);
 
-        var changes = await GetYesterdayChangesAsync(baseUrl, token, statisticIds);
+        var changes = await GetYesterdayChangesAsync(webSocketUrl, token, statisticIds);
 
         return new EnergySummary(
             productionEntityId != null && changes.TryGetValue(productionEntityId, out var p) ? p : null,
@@ -45,13 +49,11 @@ public static class HomeAssistantEnergy
         return values.Count > 0 ? values.Sum() : null;
     }
 
-    private static async Task<Dictionary<string, double>> GetYesterdayChangesAsync(string baseUrl, string token, string[] statisticIds)
+    private static async Task<Dictionary<string, double>> GetYesterdayChangesAsync(string webSocketUrl, string token, string[] statisticIds)
     {
-        var wsUrl = baseUrl.TrimEnd('/').Replace("https://", "wss://").Replace("http://", "ws://") + "/api/websocket";
-
         using var ws = new ClientWebSocket();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        await ws.ConnectAsync(new Uri(wsUrl), cts.Token);
+        await ws.ConnectAsync(new Uri(webSocketUrl), cts.Token);
 
         await ReceiveJsonAsync(ws, cts.Token); // auth_required
 

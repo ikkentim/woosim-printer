@@ -19,21 +19,24 @@ ReceiptPrinter.Service      --HTTP-->       ReceiptPrinter.NetworkSerialService 
 
 1. On the PC with the printer: `cd src/ReceiptPrinter.NetworkSerialService && dotnet run` (see the main
    repo). It listens on port `5251` by default.
-2. Install this add-on and set `printer_network_host` to that PC's `host:port` (e.g.
-   `192.168.1.50:5251`).
-3. Start the add-on. Its `/data` folder (Settings -> Add-ons -> Receipt Printer Service -> "Show disk
-   usage" / accessible via the Samba or SSH add-on) is where `ha-config.json`, `reminders-config.json`,
-   `briefing-config.json`, `todo.txt`, `todo-note-store.json` and `briefing-settings.json` live - fill
-   those in there, using the same fields documented in the main README. They never need to go in this
-   repo.
+2. Install this add-on and open its **Configuration** tab. Everything is grouped to match the app's
+   settings directly:
+   - `Printer.NetworkHost` - that PC's `host:port` (e.g. `192.168.1.50:5251`).
+   - `Location` - coordinates for the weather widget.
+   - `HomeAssistant` - leave `BaseUrl`/`Token` **empty** to talk to Home Assistant through Supervisor's
+     own proxy (this add-on already has `homeassistant_api: true`, so it gets a scoped token
+     automatically - no personal long-lived access token needed). Fill in `TodoEntityId` etc. for the
+     to-do list and Energy dashboard entities, per the main README.
+   - `Briefing` - language, which widgets run and in what order, and the to-do-note/schedule toggles -
+     see [Configuration](https://github.com/ikkentim/woosim-printer#configuration) in the main README.
+3. Start the add-on. Config changes in this tab apply live - no restart needed.
 
 ## Endpoints
 
 - `POST /print` - accepts a `Receipt` as JSON and prints it directly.
 - `POST /briefing/trigger` - builds and prints the daily briefing on demand.
 - `POST /todos/check` - checks the to-do list for new items and prints a note for each one (a no-op if
-  `briefing-settings.json`'s `TodoNotesEnabled` is `false`).
+  `Briefing.TodoNotesEnabled` is off).
 
-A background task also prints the daily briefing automatically per `briefing-settings.json`'s
-`ScheduledBriefingEnabled`/`ScheduledHour`/`ScheduledMinute` (default: enabled, 07:00) - editing that file
-takes effect without restarting the add-on.
+A background task also prints the daily briefing automatically per `Briefing.ScheduledBriefingEnabled`/
+`ScheduledHour`/`ScheduledMinute` (default: enabled, 07:00).

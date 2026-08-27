@@ -1,5 +1,5 @@
 using System.CommandLine;
-using ReceiptPrinter.Cli;
+using ReceiptPrinter.Configuration;
 using ReceiptPrinter.Printers.Network;
 using ReceiptPrinter.Printers.Serial;
 using ReceiptPrinter.Receipts;
@@ -8,11 +8,8 @@ using ReceiptPrinter.Widgets;
 var rootCommand = new RootCommand("Woosim receipt printer CLI");
 
 rootCommand.Add(BuildPrintCommand("test", "Prints a basic ESC/POS test receipt.", () => Task.FromResult(BuildTestReceipt())));
-rootCommand.Add(BuildPrintCommand("briefing", "Builds and prints the daily briefing.", DailyBriefing.BuildAsync));
-
-var remindersDebugCommand = new Command("reminders-debug", "Lists Apple Reminders CalDAV lists and their contents, for debugging.");
-remindersDebugCommand.SetAction(async (_, _) => await RemindersDebug.RunAsync());
-rootCommand.Add(remindersDebugCommand);
+rootCommand.Add(BuildPrintCommand("briefing", "Builds and prints the daily briefing.",
+    () => DailyBriefing.BuildAsync(ReceiptPrinterConfiguration.Load())));
 
 return await rootCommand.Parse(args).InvokeAsync();
 
