@@ -1,5 +1,33 @@
 # Changelog
 
+## 1.3.0
+
+- **Breaking**: removed the HTTP API entirely (`/print`, `/briefing/trigger`, `/todos/check`,
+  `/diag/home-assistant`) and the `ports`/`ports_description` add-on config - `ReceiptPrinter.Service` is
+  now a plain background worker with no web server, triggered only over MQTT. `services: [mqtt:want]`
+  became `[mqtt:need]` accordingly: a broker is now required, not optional. The `/diag/home-assistant`
+  connectivity check is now a startup log line instead.
+- **Breaking**: removed the `Mqtt.Enabled` option - MQTT is the only way to trigger this add-on now, so a
+  toggle to turn it off no longer makes sense.
+- `notify.receipt_printer_print` (MQTT) now supports a tiny markdown dialect - `# heading` for a big
+  bold line; `**bold**`/`*underline*` inline (mixable/nestable); `>`/`>>` at the start of a line to
+  center/right-justify it; a `~~~` line for a full cut instead of the default partial one; a
+  `[WidgetName]` line (e.g. `[Weather]`, `[DailyBriefing]`) to splice in that briefing widget's own live
+  output; `\*`/`\#`/`\>`/`\~`/`\\` to escape a literal character. So an automation can format its own
+  note - including reusing the same widgets the daily briefing does - without building a `Receipt` JSON
+  payload by hand. See `ReceiptMarkdown.cs`.
+- `DailyBriefingWidget` (new) is itself an `IBriefingWidget` that combines whichever widgets
+  `Briefing.Widgets` configures - `DailyBriefing.BuildAsync` is now a thin wrapper around it. This is
+  what makes `[DailyBriefing]` in the markdown above work, and it's the same widget-factory dictionary
+  `ReceiptMarkdown`'s other `[WidgetName]` references resolve against.
+- Added a CLI `print` command: `dotnet run -- print "text"` (ReceiptMarkdown, same as the MQTT `notify`
+  entity, widgets and all), or pipe text via stdin if no argument is given.
+- **Fixed**: the last line of content could get sliced through by the cutter (not enough feed distance
+  first, especially for a full `~~~` cut). `ReceiptMarkdown` now does a tail inspection after building
+  the full element list: counts however many blank lines are already at the end and tops up the
+  shortfall to at least 3 - never trims, so an automation that wants more room can just add its own
+  blank lines and this won't fight it back down.
+
 ## 1.2.1
 
 - **Fixed**: `Briefing.Language: nl` printed the date header (weekday/month) in English. Alpine's

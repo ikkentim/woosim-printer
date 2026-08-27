@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MQTTnet;
 using MQTTnet.Client;
@@ -13,12 +15,12 @@ namespace ReceiptPrinter.Service.Mqtt;
 /// <summary>
 /// Publishes MQTT discovery configs so "print the briefing", "check to-dos now" and "print this text"
 /// show up as ordinary Home Assistant entities (buttons + a notify target) on a single device, instead
-/// of requiring rest_command YAML. Everything here is additive - the HTTP endpoints in Program.cs keep
-/// working exactly as before regardless of whether MQTT is available.
+/// of requiring rest_command YAML - and, since there's no HTTP API, this is the only way to trigger the
+/// service at all. config.yaml declares `services: [mqtt:need]` accordingly.
 ///
 /// Broker connection details come from Supervisor's Services API (see SupervisorMqttBroker), not from
-/// user-entered config - nothing to configure beyond Mqtt.Enabled. If no MQTT broker is set up in Home
-/// Assistant at all, this quietly does nothing; it's an enhancement, not a requirement.
+/// user-entered config - nothing to fill in for this beyond installing a broker add-on (e.g. Mosquitto).
+/// Running outside the add-on (no SUPERVISOR_TOKEN, e.g. local development) just logs and no-ops.
 /// </summary>
 public sealed class MqttAddonService(
     IReceiptPrinter printer,
@@ -30,18 +32,12 @@ public sealed class MqttAddonService(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        if (!options.CurrentValue.Mqtt.Enabled)
-        {
-            logger.LogInformation("MQTT integration disabled (Mqtt.Enabled is false) - skipping");
-            return;
-        }
-
         var supervisorToken = Environment.GetEnvironmentVariable("SUPERVISOR_TOKEN");
         if (string.IsNullOrEmpty(supervisorToken))
         {
             logger.LogInformation(
                 "SUPERVISOR_TOKEN not available - not running as a Home Assistant add-on with API access, " +
-                "so MQTT discovery is skipped. The HTTP endpoints still work.");
+                "so MQTT discovery is skipped. There's no other way to trigger this service.");
             return;
         }
 
@@ -60,7 +56,7 @@ public sealed class MqttAddonService(
         {
             logger.LogInformation(
                 "No MQTT broker registered with Home Assistant Supervisor (install e.g. the Mosquitto " +
-                "broker add-on to enable this) - MQTT commands will be unavailable, HTTP endpoints still work.");
+                "broker add-on to enable this) - there's no other way to trigger this service.");
             return;
         }
 
@@ -149,7 +145,21 @@ public sealed class MqttAddonService(
                 case MqttTopics.PrintCommandTopic:
                     var message = Encoding.UTF8.GetString(e.ApplicationMessage.PayloadSegment);
                     logger.LogInformation("MQTT: printing freeform message ({Length} chars)", message.Length);
-                    await printer.PrintAsync(BuildFreeformReceipt(message));
+
+                    var settings = options.CurrentValue;
+                    Localization.SetLanguage(settings.Briefing.Language);
+                    var widgetFactories = DailyBriefingWidget.CreateWidgetFactories(settings);
+
+                    var receipt = await ReceiptMarkdown.ParseAsync(message, async name =>
+                    {
+                        if (widgetFactories.TryGetValue(name, out var factory))
+                            return await factory().RenderAsync();
+
+                        logger.LogWarning("Unknown widget '{Name}' referenced in freeform print message, skipping", name);
+                        return Array.Empty<IElement>();
+                    });
+
+                    await printer.PrintAsync(receipt);
                     break;
             }
         }
@@ -157,17 +167,6 @@ public sealed class MqttAddonService(
         {
             logger.LogError(ex, "Failed to handle MQTT command on {Topic}", topic);
         }
-    }
-
-    private static Receipt BuildFreeformReceipt(string message)
-    {
-        var lines = message.Replace("\r\n", "\n").Split('\n');
-        var elements = new List<IElement>();
-        elements.AddRange(lines.Select(line => new TextElement(line)));
-        elements.Add(new TextElement(""));
-        elements.Add(new TextElement(""));
-
-        return new Receipt(elements, CutStyle.Partial);
     }
 
     private static async Task PublishDiscoveryAsync(IManagedMqttClient client)

@@ -7,13 +7,45 @@ using ReceiptPrinter.Widgets;
 
 var rootCommand = new RootCommand("Woosim receipt printer CLI");
 
-rootCommand.Add(BuildPrintCommand("test", "Prints a basic ESC/POS test receipt.", () => Task.FromResult(BuildTestReceipt())));
-rootCommand.Add(BuildPrintCommand("briefing", "Builds and prints the daily briefing.",
-    () => DailyBriefing.BuildAsync(ReceiptPrinterConfiguration.Load())));
+rootCommand.Add(BuildPrintCommand("test", "Prints a basic ESC/POS test receipt.", extra: [],
+    (_, _) => Task.FromResult(BuildTestReceipt())));
+rootCommand.Add(BuildPrintCommand("briefing", "Builds and prints the daily briefing.", extra: [],
+    (_, _) => DailyBriefing.BuildAsync(ReceiptPrinterConfiguration.Load())));
+
+var messageArgument = new Argument<string?>("message")
+{
+    Description = "Text to print, using ReceiptMarkdown formatting (see README.md). Omit to read from stdin instead.",
+    Arity = ArgumentArity.ZeroOrOne,
+};
+rootCommand.Add(BuildPrintCommand("print", "Prints text (an argument, or piped via stdin) using ReceiptMarkdown formatting.",
+    extra: [messageArgument], async (parseResult, cancellationToken) =>
+    {
+        var message = parseResult.GetValue(messageArgument);
+        if (string.IsNullOrEmpty(message))
+        {
+            if (!Console.IsInputRedirected)
+                throw new InvalidOperationException("Provide text as an argument, or pipe it via stdin (e.g. `echo hello | dotnet run -- print`).");
+
+            message = await Console.In.ReadToEndAsync(cancellationToken);
+        }
+
+        var options = ReceiptPrinterConfiguration.Load();
+        Localization.SetLanguage(options.Briefing.Language);
+        var widgetFactories = DailyBriefingWidget.CreateWidgetFactories(options);
+
+        return await ReceiptMarkdown.ParseAsync(message, async name =>
+        {
+            if (widgetFactories.TryGetValue(name, out var factory))
+                return await factory().RenderAsync();
+
+            Console.WriteLine($"Unknown widget '{name}' referenced, skipping.");
+            return Array.Empty<IElement>();
+        });
+    }));
 
 return await rootCommand.Parse(args).InvokeAsync();
 
-static Command BuildPrintCommand(string name, string description, Func<Task<Receipt>> buildReceipt)
+static Command BuildPrintCommand(string name, string description, Argument[] extra, Func<ParseResult, CancellationToken, Task<Receipt>> buildReceipt)
 {
     var printerOption = new Option<string>("--printer", "-p")
     {
@@ -37,6 +69,8 @@ static Command BuildPrintCommand(string name, string description, Func<Task<Rece
     };
 
     var command = new Command(name, description) { printerOption, portOption, baudOption, hostOption };
+    foreach (var argument in extra)
+        command.Add(argument);
 
     command.SetAction(async (parseResult, cancellationToken) =>
     {
@@ -46,7 +80,7 @@ static Command BuildPrintCommand(string name, string description, Func<Task<Rece
             parseResult.GetValue(baudOption),
             parseResult.GetValue(hostOption)!);
 
-        var receipt = await buildReceipt();
+        var receipt = await buildReceipt(parseResult, cancellationToken);
         await printer.PrintAsync(receipt);
         Console.WriteLine("Done.");
     });

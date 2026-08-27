@@ -27,28 +27,26 @@ RUN apk add --no-cache \
     zlib
 
 ENV \
-    ASPNETCORE_URLS=http://+:8099 \
     DOTNET_RUNNING_IN_CONTAINER=true \
     # Store config/state (ha-config.json, todo-note-store.json, ...) on the add-on's persistent /data
     # folder instead of next to the binary, so it survives image updates.
     RECEIPTPRINTER_CONFIG_DIR=/data
 
+# No HTTP server anymore (everything's triggered over MQTT - see MqttAddonService), so just the plain
+# runtime rather than the aspnetcore shared framework.
 RUN \
     wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh && \
     chmod +x ./dotnet-install.sh && \
-    ./dotnet-install.sh --runtime aspnetcore --channel 10.0 --install-dir /usr/share/dotnet && \
+    ./dotnet-install.sh --runtime dotnet --channel 10.0 --install-dir /usr/share/dotnet && \
     ln -s /usr/share/dotnet/dotnet /usr/bin/dotnet && \
     rm dotnet-install.sh
 
 WORKDIR /app
 COPY --from=build-env /app .
 
-# --urls beats ASPNETCORE_URLS in ASP.NET Core's config precedence, so this pins the bind address even
-# if something in the HA base image's entrypoint chain drops/overrides the env var.
-#
 # with-contenv matters here: s6-overlay (the base image's init system) stores env vars set by its
 # cont-init.d scripts - including SUPERVISOR_TOKEN - in its own container_environment store, not real
 # Docker ENV. A process only sees them if it's launched through with-contenv, which exports that store
 # into the process's actual environment. Without it, dotnet never sees SUPERVISOR_TOKEN even though
 # `homeassistant_api: true` is set, which is why HomeAssistantConnection.Resolve came back null.
-CMD ["with-contenv", "dotnet", "ReceiptPrinter.Service.dll", "--urls", "http://+:8099"]
+CMD ["with-contenv", "dotnet", "ReceiptPrinter.Service.dll"]

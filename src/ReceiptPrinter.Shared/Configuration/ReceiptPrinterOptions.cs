@@ -10,7 +10,6 @@ public sealed class ReceiptPrinterOptions
 {
     public HomeAssistantOptions HomeAssistant { get; set; } = new();
     public BriefingOptions Briefing { get; set; } = new();
-    public MqttOptions Mqtt { get; set; } = new();
 }
 
 /// <summary>
@@ -49,14 +48,4 @@ public sealed class BriefingOptions
     public List<string>? Widgets { get; set; }
 
     public bool TodoNotesEnabled { get; set; } = true;
-}
-
-/// <summary>
-/// Only meaningful when running as this repo's Home Assistant add-on - broker connection details come
-/// from Supervisor's Services API (using SUPERVISOR_TOKEN), not from user-entered config, so there's
-/// nothing to fill in here beyond turning the feature on or off. See MqttAddonService.
-/// </summary>
-public sealed class MqttOptions
-{
-    public bool Enabled { get; set; } = true;
 }

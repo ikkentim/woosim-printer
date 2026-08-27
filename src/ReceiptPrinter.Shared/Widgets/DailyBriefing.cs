@@ -4,9 +4,9 @@ using ReceiptPrinter.Receipts;
 namespace ReceiptPrinter.Widgets;
 
 /// <summary>
-/// Builds the daily briefing receipt by running each configured widget in order and collecting their
-/// elements. Which widgets run, in what order, and in what language, comes from ReceiptPrinterOptions.Briefing
-/// - falls back to every widget in the original order.
+/// Top-level entry point for "print the daily briefing" (the scheduled/on-demand trigger, not a widget
+/// itself) - sets the language, runs <see cref="DailyBriefingWidget"/>, and wraps its elements as a
+/// printable <see cref="Receipt"/>. The actual widget-combining logic lives in DailyBriefingWidget.
 /// </summary>
 public static class DailyBriefing
 {
@@ -14,35 +14,7 @@ public static class DailyBriefing
     {
         Localization.SetLanguage(options.Briefing.Language);
 
-        var widgetFactories = new Dictionary<string, Func<IBriefingWidget>>(StringComparer.OrdinalIgnoreCase)
-        {
-            ["DateHeader"] = () => new DateHeaderWidget(),
-            ["Weather"] = () => new WeatherWidget(options.HomeAssistant),
-            ["Calendar"] = () => new CalendarWidget(options.HomeAssistant),
-            ["Todo"] = () => new TodoWidget(options.HomeAssistant),
-            ["Energy"] = () => new EnergyWidget(options.HomeAssistant),
-        };
-
-        var order = options.Briefing.Widgets is { Count: > 0 } ? options.Briefing.Widgets : BriefingOptions.DefaultWidgetOrder;
-
-        var elements = new List<IElement>();
-        foreach (var name in order)
-        {
-            if (!widgetFactories.TryGetValue(name, out var factory))
-            {
-                Console.WriteLine($"Unknown briefing widget '{name}' in Briefing:Widgets, skipping.");
-                continue;
-            }
-
-            elements.AddRange(await factory().RenderAsync());
-        }
-
-        // A little extra breathing room before the cut.
-        elements.Add(new TextElement(""));
-        elements.Add(new TextElement(""));
-        elements.Add(new TextElement(""));
-        elements.Add(new TextElement(""));
-
+        var elements = await new DailyBriefingWidget(options).RenderAsync();
         return new Receipt(elements, CutStyle.Partial);
     }
 }

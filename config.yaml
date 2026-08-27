@@ -1,11 +1,11 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: "Receipt Printer Service"
-version: "1.2.1"
+version: "1.3.0"
 slug: receiptprinter_service
 url: https://github.com/ikkentim/woosim-printer
 description: >-
   Daily briefing / to-do printer for a Woosim receipt printer, triggered from
-  Home Assistant automations (HTTP or MQTT) - prints over the network to
+  Home Assistant automations over MQTT - prints over the network to
   ReceiptPrinter.NetworkSerialService, which runs on the PC with the actual
   printer wired up over serial.
 arch:
@@ -18,14 +18,10 @@ image: ghcr.io/ikkentim/ha-{arch}-receiptprinter-service
 # token needed, and no BaseUrl/Token option below to fill in. Also used to read HA's own configured
 # latitude/longitude for the weather widget - see HomeAssistantLocation.cs.
 homeassistant_api: true
-# "want" (not "need"): the add-on still runs fine with no MQTT broker configured in Home Assistant -
-# it just skips publishing the button/notify/sensor entities described in Mqtt.Enabled below.
+# "need" (not "want"): there's no HTTP API anymore - MQTT is the only way to trigger anything, so a
+# broker (e.g. the official Mosquitto add-on) is required for this add-on to do anything useful at all.
 services:
-  - mqtt:want
-ports:
-  8099/tcp: 8099
-ports_description:
-  8099/tcp: HTTP API (POST /print, /briefing/trigger, /todos/check)
+  - mqtt:need
 options:
   Printer:
     Type: "network"
@@ -46,8 +42,6 @@ options:
       - "Todo"
       - "Energy"
     TodoNotesEnabled: true
-  Mqtt:
-    Enabled: true
 schema:
   Printer:
     Type: "list(serial|network)"
@@ -63,5 +57,3 @@ schema:
     Language: "list(nl|en)"
     Widgets: ["str"]
     TodoNotesEnabled: bool
-  Mqtt:
-    Enabled: bool

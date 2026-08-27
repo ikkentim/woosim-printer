@@ -1,4 +1,7 @@
-using System.Text.Json.Serialization;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ReceiptPrinter.Configuration;
 using ReceiptPrinter.HomeAssistant;
@@ -6,13 +9,12 @@ using ReceiptPrinter.Printers.Network;
 using ReceiptPrinter.Printers.Serial;
 using ReceiptPrinter.Receipts;
 using ReceiptPrinter.Service;
-using ReceiptPrinter.Widgets;
 
-// TODO: this project is a scaffold, not a finished service. It compiles and the endpoints below work,
-// but hasn't been run against real hardware yet or hardened (no auth on the API, no retry/reconnect
-// logic if the printer connection drops, etc.) - see README.md for the intended design.
+// A plain background worker, no HTTP server - every action (print the briefing, check to-dos, print a
+// freeform message) is triggered over MQTT via MqttAddonService. See README.md's "MQTT entities"
+// section for the automation-facing side of this.
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = Host.CreateApplicationBuilder(args);
 
 // Same config layering as the CLI (see ReceiptPrinterConfiguration) plus, when running as a Home
 // Assistant add-on, Supervisor's /data/options.json - reloads live, so editing the add-on's
@@ -21,9 +23,6 @@ builder.Configuration.AddJsonFile(ConfigPaths.Combine("appsettings.local.json"),
 builder.Configuration.AddJsonFile("/data/options.json", optional: true, reloadOnChange: true);
 
 builder.Services.Configure<ReceiptPrinterOptions>(builder.Configuration);
-
-builder.Services.ConfigureHttpJsonOptions(options =>
-    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddSingleton<IReceiptPrinter>(sp =>
 {
@@ -45,46 +44,15 @@ builder.Services.AddHostedService<ReceiptPrinter.Service.Mqtt.MqttAddonService>(
 
 var app = builder.Build();
 
-app.MapPost("/print", async (Receipt receipt, IReceiptPrinter printer) =>
-{
-    await printer.PrintAsync(receipt);
-    return Results.Ok();
-});
-
-app.MapPost("/briefing/trigger", async (IReceiptPrinter printer, IOptionsSnapshot<ReceiptPrinterOptions> options) =>
-{
-    var receipt = await DailyBriefing.BuildAsync(options.Value);
-    await printer.PrintAsync(receipt);
-    return Results.Ok();
-});
-
-app.MapPost("/todos/check", async (TodoNoteChecker checker, IReceiptPrinter printer) =>
-{
-    await checker.CheckAndPrintAsync(printer);
-    return Results.Ok();
-});
-
-// Diagnostic-only endpoint: reports whether Home Assistant connectivity can be resolved at all, and
-// from which source (explicit BaseUrl/Token vs. Supervisor's auto-injected SUPERVISOR_TOKEN), without
-// ever exposing the actual token value. Useful for debugging "briefing comes back empty" reports where
-// individual widgets fail silently and just log to the console.
-app.MapGet("/diag/home-assistant", (IOptionsSnapshot<ReceiptPrinterOptions> options) =>
-{
-    var ha = options.Value.HomeAssistant;
-    var supervisorToken = Environment.GetEnvironmentVariable("SUPERVISOR_TOKEN");
-    var connection = HomeAssistantConnection.Resolve(ha);
-
-    return Results.Ok(new
-    {
-        BaseUrlConfigured = !string.IsNullOrEmpty(ha.BaseUrl),
-        TokenConfigured = !string.IsNullOrEmpty(ha.Token),
-        SupervisorTokenPresent = !string.IsNullOrEmpty(supervisorToken),
-        SupervisorTokenLength = supervisorToken?.Length ?? 0,
-        ConnectionResolved = connection != null,
-        ConnectionSource = connection == null ? null : !string.IsNullOrEmpty(ha.BaseUrl) ? "explicit" : "supervisor",
-        connection?.RestBaseUrl,
-        connection?.WebSocketUrl,
-    });
-});
+// Logs whether Home Assistant connectivity resolved (and from where), without ever exposing the token
+// value - since there's no /diag HTTP endpoint anymore, this is the equivalent for the "briefing comes
+// back with sections missing" debugging case: check the add-on's log for this line.
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+var haOptions = app.Services.GetRequiredService<IOptions<ReceiptPrinterOptions>>().Value.HomeAssistant;
+var connection = HomeAssistantConnection.Resolve(haOptions);
+logger.LogInformation(
+    "Home Assistant connectivity: {Status} (source: {Source})",
+    connection != null ? "resolved" : "unavailable",
+    connection == null ? "none" : !string.IsNullOrEmpty(haOptions.BaseUrl) ? "explicit BaseUrl/Token" : "Supervisor token");
 
 app.Run();
