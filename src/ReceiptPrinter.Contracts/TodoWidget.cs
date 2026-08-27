@@ -2,26 +2,27 @@ namespace ReceiptPrinter;
 
 public sealed class TodoWidget : IBriefingWidget
 {
-    public async Task RenderAsync(IReceiptPrinter printer)
+    public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
         var todos = await LoadAsync();
+        var elements = new List<IElement> { new TextElement("TE DOEN", Bold: true) };
 
-        printer.SetBold(true);
-        printer.Line("TE DOEN");
-        printer.SetBold(false);
         if (todos.Count == 0)
         {
-            printer.Line("(niets op de lijst)");
+            elements.Add(new TextElement("(niets op de lijst)"));
         }
         else
         {
             foreach (var todo in todos)
-                printer.Line($"- {todo}");
+                elements.Add(new TextElement($"- {todo}"));
         }
-        printer.Feed(1);
+        elements.Add(new TextElement(""));
+
+        return elements;
     }
 
-    private static async Task<List<string>> LoadAsync()
+    /// <summary>Loads the current to-do items - exposed for the Service's TODO-note diffing (see docs).</summary>
+    public static async Task<List<string>> LoadAsync()
     {
         var haConfig = BriefingConfig.LoadHa();
         if (haConfig != null)

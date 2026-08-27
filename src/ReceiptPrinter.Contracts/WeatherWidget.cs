@@ -5,15 +5,18 @@ namespace ReceiptPrinter;
 
 public sealed class WeatherWidget : IBriefingWidget
 {
-    public async Task RenderAsync(IReceiptPrinter printer)
+    public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
         var config = BriefingConfig.LoadLocation();
         var weather = await GetWeatherAsync(config);
 
-        printer.Line(new string('-', 32));
-        printer.Line(weather ?? "Weer niet beschikbaar");
-        printer.Line(new string('-', 32));
-        printer.Feed(1);
+        return
+        [
+            new TextElement(new string('-', 32)),
+            new TextElement(weather ?? "Weer niet beschikbaar"),
+            new TextElement(new string('-', 32)),
+            new TextElement(""),
+        ];
     }
 
     private static async Task<string?> GetWeatherAsync(LocationConfig config)

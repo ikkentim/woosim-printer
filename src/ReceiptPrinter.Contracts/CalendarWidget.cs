@@ -6,37 +6,36 @@ public sealed class CalendarWidget : IBriefingWidget
 {
     private static readonly CultureInfo Dutch = CultureInfo.GetCultureInfo("nl-NL");
 
-    public async Task RenderAsync(IReceiptPrinter printer)
+    public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
         var (today, upcoming) = await LoadAsync();
+        var elements = new List<IElement>();
 
-        printer.SetBold(true);
-        printer.Line("VANDAAG");
-        printer.SetBold(false);
+        elements.Add(new TextElement("VANDAAG", Bold: true));
         if (today.Count == 0)
         {
-            printer.Line("(geen afspraken vandaag)");
+            elements.Add(new TextElement("(geen afspraken vandaag)"));
         }
         else
         {
             foreach (var ev in today)
-                printer.Line($"- {(ev.AllDay ? "Hele dag" : ev.Start.ToString("HH:mm"))}  {ev.Summary}");
+                elements.Add(new TextElement($"- {(ev.AllDay ? "Hele dag" : ev.Start.ToString("HH:mm"))}  {ev.Summary}"));
         }
-        printer.Feed(1);
+        elements.Add(new TextElement(""));
 
-        printer.SetBold(true);
-        printer.Line("AANKOMEND (komende 14 dagen)");
-        printer.SetBold(false);
+        elements.Add(new TextElement("AANKOMEND (komende 14 dagen)", Bold: true));
         if (upcoming.Count == 0)
         {
-            printer.Line("(niets aankomend)");
+            elements.Add(new TextElement("(niets aankomend)"));
         }
         else
         {
             foreach (var ev in upcoming.Take(3))
-                printer.Line($"- {ev.Start.ToString("ddd d MMM", Dutch)}  {ev.Summary}");
+                elements.Add(new TextElement($"- {ev.Start.ToString("ddd d MMM", Dutch)}  {ev.Summary}"));
         }
-        printer.Feed(1);
+        elements.Add(new TextElement(""));
+
+        return elements;
     }
 
     private static async Task<(List<CalendarEventInfo> Today, List<CalendarEventInfo> Upcoming)> LoadAsync()

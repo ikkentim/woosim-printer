@@ -2,24 +2,25 @@ namespace ReceiptPrinter;
 
 public sealed class EnergyWidget : IBriefingWidget
 {
-    public async Task RenderAsync(IReceiptPrinter printer)
+    public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
         var energy = await LoadAsync();
 
         if (energy.ProducedKwh == null && energy.GridImportKwh == null && energy.GridExportKwh == null && energy.GasM3 == null)
-            return;
+            return Array.Empty<IElement>();
 
-        printer.SetBold(true);
-        printer.Line("ENERGIE (gisteren)");
-        printer.SetBold(false);
+        var elements = new List<IElement> { new TextElement("ENERGIE (gisteren)", Bold: true) };
+
         if (energy.ProducedKwh != null)
-            printer.Line($"- Geproduceerd: {energy.ProducedKwh:0.0} kWh");
+            elements.Add(new TextElement($"- Geproduceerd: {energy.ProducedKwh:0.0} kWh"));
         if (energy.GridImportKwh != null)
-            printer.Line($"- Van net: {energy.GridImportKwh:0.0} kWh");
+            elements.Add(new TextElement($"- Van net: {energy.GridImportKwh:0.0} kWh"));
         if (energy.GridExportKwh != null)
-            printer.Line($"- Teruggeleverd: {energy.GridExportKwh:0.0} kWh");
+            elements.Add(new TextElement($"- Teruggeleverd: {energy.GridExportKwh:0.0} kWh"));
         if (energy.GasM3 != null)
-            printer.Line($"- Gas: {energy.GasM3:0.0} m3");
+            elements.Add(new TextElement($"- Gas: {energy.GasM3:0.0} m3"));
+
+        return elements;
     }
 
     private static async Task<EnergySummary> LoadAsync()

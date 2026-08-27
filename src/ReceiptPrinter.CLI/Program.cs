@@ -1,7 +1,4 @@
-using System.Text;
 using ReceiptPrinter;
-
-Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 // Usage:
 //   dotnet run -- <command> [printer-type] [printer-args...]
@@ -17,20 +14,14 @@ if (command == "reminders-debug")
 }
 
 using var printer = CreatePrinter(args.Skip(1).ToArray());
-printer.Open();
-printer.Initialize();
 
-switch (command)
+var receipt = command switch
 {
-    case "briefing":
-        await DailyBriefing.PrintAsync(printer);
-        break;
-    case "test":
-    default:
-        RunTestPrint(printer);
-        break;
-}
+    "briefing" => await DailyBriefing.BuildAsync(),
+    _ => BuildTestReceipt(),
+};
 
+await printer.PrintAsync(receipt);
 Console.WriteLine("Done.");
 
 static IReceiptPrinter CreatePrinter(string[] printerArgs)
@@ -53,24 +44,20 @@ static IReceiptPrinter CreatePrinter(string[] printerArgs)
     }
 }
 
-static void RunTestPrint(IReceiptPrinter printer)
+static Receipt BuildTestReceipt()
 {
-    printer.SetJustification(Justification.Center);
-    printer.SetTextSize(2, 2);
-    printer.SetBold(true);
-    printer.Line("HELLO");
-    printer.SetBold(false);
-    printer.SetTextSize(1, 1);
-    printer.Feed(1);
+    IReadOnlyList<IElement> elements =
+    [
+        new TextElement("HELLO", Bold: true, Width: 2, Height: 2, Justification: Justification.Center),
+        new TextElement(""),
+        new TextElement($"Printer test - {DateTime.Now:yyyy-MM-dd HH:mm:ss}"),
+        new TextElement(new string('-', 32)),
+        new TextElement("Underlined line", Underline: true),
+        new TextElement("Plain line"),
+        new TextElement(""),
+        new TextElement(""),
+        new TextElement(""),
+    ];
 
-    printer.SetJustification(Justification.Left);
-    printer.Line($"Printer test - {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
-    printer.Line(new string('-', 32));
-    printer.SetUnderline(true);
-    printer.Line("Underlined line");
-    printer.SetUnderline(false);
-    printer.Line("Plain line");
-
-    printer.Feed(3);
-    printer.CutPaper();
+    return new Receipt(elements, CutStyle.Partial);
 }
