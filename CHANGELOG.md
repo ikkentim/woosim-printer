@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.2
+
+- **Fixed**: `SUPERVISOR_TOKEN` (and everything else `homeassistant_api: true` was supposed to unlock) was
+  never actually reaching the app. The container's `CMD` execs `dotnet` directly, but s6-overlay (the
+  base image's init system) only exports its `cont-init.d`-set env vars - including `SUPERVISOR_TOKEN` -
+  into processes launched through `with-contenv`. `/diag/home-assistant` (added in 1.1.1) confirmed
+  `supervisorTokenPresent: false` despite the permission being granted; wrapping the `CMD` in
+  `with-contenv` fixes it.
+
 ## 1.1.1
 
 - Added a `GET /diag/home-assistant` endpoint that reports whether Home Assistant connectivity can be

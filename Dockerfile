@@ -39,4 +39,10 @@ COPY --from=build-env /app .
 
 # --urls beats ASPNETCORE_URLS in ASP.NET Core's config precedence, so this pins the bind address even
 # if something in the HA base image's entrypoint chain drops/overrides the env var.
-CMD ["dotnet", "ReceiptPrinter.Service.dll", "--urls", "http://+:8099"]
+#
+# with-contenv matters here: s6-overlay (the base image's init system) stores env vars set by its
+# cont-init.d scripts - including SUPERVISOR_TOKEN - in its own container_environment store, not real
+# Docker ENV. A process only sees them if it's launched through with-contenv, which exports that store
+# into the process's actual environment. Without it, dotnet never sees SUPERVISOR_TOKEN even though
+# `homeassistant_api: true` is set, which is why HomeAssistantConnection.Resolve came back null.
+CMD ["with-contenv", "dotnet", "ReceiptPrinter.Service.dll", "--urls", "http://+:8099"]
