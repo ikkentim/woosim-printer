@@ -8,23 +8,17 @@ namespace ReceiptPrinter.Configuration;
 /// </summary>
 public sealed class ReceiptPrinterOptions
 {
-    public LocationOptions Location { get; set; } = new();
     public HomeAssistantOptions HomeAssistant { get; set; } = new();
     public BriefingOptions Briefing { get; set; } = new();
-}
-
-public sealed class LocationOptions
-{
-    // Defaults to Kampen, Overijssel - override with your own coordinates for the weather widget.
-    public double Latitude { get; set; } = 52.5546;
-    public double Longitude { get; set; } = 5.9114;
-    public string LocationName { get; set; } = "Kampen";
+    public MqttOptions Mqtt { get; set; } = new();
 }
 
 /// <summary>
 /// BaseUrl/Token are only needed when NOT running as this repo's Home Assistant add-on - the add-on
 /// instead reaches Home Assistant through Supervisor's proxy using its own automatically-injected
 /// token, with no personal long-lived access token required. See <see cref="HomeAssistantConnection"/>.
+/// The weather widget's coordinates also come from here (Home Assistant's own /api/config), so there's
+/// no separate location setting to fill in either way.
 /// </summary>
 public sealed class HomeAssistantOptions
 {
@@ -55,7 +49,14 @@ public sealed class BriefingOptions
     public List<string>? Widgets { get; set; }
 
     public bool TodoNotesEnabled { get; set; } = true;
-    public bool ScheduledBriefingEnabled { get; set; } = true;
-    public int ScheduledHour { get; set; } = 7;
-    public int ScheduledMinute { get; set; } = 0;
+}
+
+/// <summary>
+/// Only meaningful when running as this repo's Home Assistant add-on - broker connection details come
+/// from Supervisor's Services API (using SUPERVISOR_TOKEN), not from user-entered config, so there's
+/// nothing to fill in here beyond turning the feature on or off. See MqttAddonService.
+/// </summary>
+public sealed class MqttOptions
+{
+    public bool Enabled { get; set; } = true;
 }

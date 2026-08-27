@@ -38,5 +38,19 @@ public sealed class NetworkWoosimPrinter : IReceiptPrinter
         response.EnsureSuccessStatusCode();
     }
 
+    /// <summary>Hits the network printer service's /health endpoint - never touches the printer itself.</summary>
+    public async Task<bool> PingAsync()
+    {
+        try
+        {
+            using var response = await _http.GetAsync("health");
+            return response.IsSuccessStatusCode;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
     public void Dispose() => _http.Dispose();
 }

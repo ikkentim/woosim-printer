@@ -8,11 +8,11 @@ This repository doubles as a Home Assistant **add-on repository** - see [Running
 
 - [x] Printer talks over RS-232 (COM3, 9600 baud) via a USB-to-serial adapter.
 - [x] Receipts are built as plain data (a `Receipt` of `IElement`s) and handed to an `IReceiptPrinter` - callers never touch ESC/POS commands or connection state directly.
-- [x] Daily briefing printout: date, weather, calendar (today + upcoming), a to-do list, and yesterday's energy usage (solar/grid/gas) - each section is a self-contained "widget" behind `IBriefingWidget`. Language (Dutch/English), which widgets run and in what order, and whether/when it runs on a schedule are all configurable at runtime - see [Configuration](#configuration).
+- [x] Daily briefing printout: date, weather, calendar (today + upcoming), a to-do list, and yesterday's energy usage (solar/grid/gas) - each section is a self-contained "widget" behind `IBriefingWidget`. Language (Dutch/English) and which widgets run (and in what order) are configurable at runtime - see [Configuration](#configuration). Triggered on demand from a Home Assistant automation (HTTP or MQTT) rather than on an internal schedule.
 - [x] To-do list sourced from Apple Reminders, via an iOS Shortcut pushing to a Home Assistant webhook (CalDAV can't see most real reminders lists - see [the data flow section](#to-do-list-data-flow)).
 - [x] Calendar events sourced from Home Assistant's `caldav` integration (iCloud calendar).
 - [x] Energy usage (solar production, grid import/export, gas) pulled straight from Home Assistant's long-term statistics (the same data behind the Energy dashboard), via its WebSocket API.
-- [x] `ReceiptPrinter.Service` - an HTTP API, a scheduled daily briefing, and a "new to-do -> print its own note" checker - runs anywhere on the network (e.g. as this repo's Home Assistant add-on) and prints to `ReceiptPrinter.NetworkSerialService`, which stays on the PC with the printer wired up over serial.
+- [x] `ReceiptPrinter.Service` - an HTTP API (plus MQTT discovery entities) and a "new to-do -> print its own note" checker, both triggered from Home Assistant automations rather than an internal scheduler - runs anywhere on the network (e.g. as this repo's Home Assistant add-on) and prints to `ReceiptPrinter.NetworkSerialService`, which stays on the PC with the printer wired up over serial.
 - [ ] Move the printer off the PC onto a standalone ESP32 (parts ordered - see [docs/HARDWARE.md](docs/HARDWARE.md)). `NetworkWoosimPrinter`/`NetworkSerialService` already speak the wire protocol the ESP32 firmware will need to speak too.
 
 ## Project layout
@@ -49,9 +49,9 @@ Both the CLI and the Service read settings from the same place - see [Configurat
 
 ## Configuration
 
-Everything (printer transport, location, Home Assistant, the briefing itself) is a single `ReceiptPrinterOptions` tree bound from `IConfiguration` (see [`ReceiptPrinterConfiguration.cs`](src/ReceiptPrinter.Shared/Configuration/ReceiptPrinterConfiguration.cs)), layered the same way for the CLI and the Service:
+Everything (printer transport, Home Assistant, the briefing itself) is a single `ReceiptPrinterOptions` tree bound from `IConfiguration` (see [`ReceiptPrinterConfiguration.cs`](src/ReceiptPrinter.Shared/Configuration/ReceiptPrinterConfiguration.cs)), layered the same way for the CLI and the Service:
 
-1. `appsettings.json` next to the executable - committed, safe non-secret defaults (location, widget order, etc.).
+1. `appsettings.json` next to the executable - committed, safe non-secret defaults (widget order, etc.).
 2. `appsettings.local.json` next to it (or under `RECEIPTPRINTER_CONFIG_DIR`, if set) - **git-ignored**, for your actual Home Assistant token when running outside Home Assistant.
 3. `/data/options.json` - only present inside the Home Assistant add-on, written by Supervisor from its Configuration tab; reloads live, no restart needed.
 4. Environment variables (e.g. `HomeAssistant__Token=...`, double-underscore for nesting) - highest priority, useful for CI/containers.
@@ -59,22 +59,44 @@ Everything (printer transport, location, Home Assistant, the briefing itself) is
 The sections, matching `appsettings.json`'s layout 1:1:
 
 - **`Printer`** - `Type` (`serial`/`network`), `Port`/`Baud` (serial), `NetworkHost` (network - `ReceiptPrinter.NetworkSerialService`'s `host:port`).
-- **`Location`** - `Latitude`/`Longitude`/`LocationName` for the weather widget (Open-Meteo, no API key needed).
-- **`HomeAssistant`** - `TodoEntityId`/`TodoAttributeName` for the to-do list, and the entity IDs feeding your Energy dashboard (`SolarProductionEntityId`, `GridImportEntityIds`/`GridExportEntityIds` - lists, summed for multi-tariff meters -, `GasEntityId`). **Leave `BaseUrl`/`Token` empty when running as the Home Assistant add-on** - it reaches Home Assistant through Supervisor's proxy using its own automatically-injected token instead (see [Running as a Home Assistant add-on](#running-as-a-home-assistant-add-on)); set them explicitly only when running the CLI/Service standalone, outside Home Assistant, with a personal long-lived access token.
-- **`Briefing`** - `Language` (`Nl`/`En` - translates every widget's labels via [`Localization.cs`](src/ReceiptPrinter.Shared/Configuration/Localization.cs)), `Widgets` (which to run and in what order - valid names `DateHeader`/`Weather`/`Calendar`/`Todo`/`Energy`, empty/omitted defaults to all five), `TodoNotesEnabled` (the Service's `/todos/check` mechanism), and `ScheduledBriefingEnabled`/`ScheduledHour`/`ScheduledMinute` for `BriefingScheduler`. The CLI's `briefing` command ignores the schedule/enabled flags (it always prints once, immediately) but still honors `Language`/`Widgets`.
+- **`HomeAssistant`** - `TodoEntityId`/`TodoAttributeName` for the to-do list, and the entity IDs feeding your Energy dashboard (`SolarProductionEntityId`, `GridImportEntityIds`/`GridExportEntityIds` - lists, summed for multi-tariff meters -, `GasEntityId`). Also where the weather widget's coordinates come from - it reads Home Assistant's own configured latitude/longitude via `/api/config`, so there's no separate location setting anywhere. `BaseUrl`/`Token` only exist for running the CLI/Service standalone, outside Home Assistant, with a personal long-lived access token - **the add-on doesn't expose them at all**, it reaches Home Assistant through Supervisor's proxy using its own automatically-injected token instead (see [Running as a Home Assistant add-on](#running-as-a-home-assistant-add-on)).
+- **`Briefing`** - `Language` (`Nl`/`En` - translates every widget's labels via [`Localization.cs`](src/ReceiptPrinter.Shared/Configuration/Localization.cs)), `Widgets` (which to run and in what order - valid names `DateHeader`/`Weather`/`Calendar`/`Todo`/`Energy`, empty/omitted defaults to all five), and `TodoNotesEnabled` (the Service's `/todos/check` mechanism). There's no internal schedule - trigger the briefing from a Home Assistant automation instead (HTTP `rest_command` or the MQTT button - see [MQTT entities](#mqtt-entities)).
+- **`Mqtt`** - `Enabled` (default `true`). Service-only; see [MQTT entities](#mqtt-entities) below.
 
 `todo.txt` (plain-text fallback to-do list, used only if Home Assistant isn't configured) and `todo-note-store.json` (the Service's persisted "already printed" tracking) stay plain files next to the executable - they're free-form content/runtime state, not settings.
 
 ## `ReceiptPrinter.Service`
 
-The HTTP API + scheduler: endpoints work and it's been run against the real printer, but it's still light on production hardening (no API auth, no reconnect logic if the printer connection drops).
+The HTTP API: endpoints work and it's been run against the real printer, but it's still light on production hardening (no API auth, no reconnect logic if the printer connection drops). Nothing runs on an internal schedule - every action is triggered from a Home Assistant automation.
 
 - `POST /print` - accepts a `Receipt` as JSON and prints it directly.
 - `POST /briefing/trigger` - builds and prints the daily briefing on demand.
 - `POST /todos/check` - the to-do note checker: compares the current to-do list (same source as the briefing's `TodoWidget`) against a small persisted store (`todo-note-store.json`) of what's already been printed. Anything new gets its own little note printed - a `TODO` heading, the item text, and the date (`dd-MM-yyyy`) it was printed. Anything that's dropped out of the source (presumably finished and thrown away) is just forgotten, no reprint. A no-op if `Briefing:TodoNotesEnabled` is `false`.
-- A background hosted service (`BriefingScheduler`) prints the daily briefing automatically per `Briefing`'s schedule.
+- `GET /diag/home-assistant` - reports whether Home Assistant connectivity resolved (and from where), without ever exposing the token value. See [`Program.cs`](src/ReceiptPrinter.Service/Program.cs).
+- A background hosted service (`MqttAddonService`) publishes MQTT discovery entities - see [MQTT entities](#mqtt-entities) below.
 
 Run it (from `src/ReceiptPrinter.Service`) with `dotnet run`. By default it prints with `Printer:Type=network`, i.e. it expects `ReceiptPrinter.NetworkSerialService` to be reachable at `Printer:NetworkHost`.
+
+## MQTT entities
+
+Add-ons can't register real Home Assistant services/actions directly - only a custom integration can. The idiomatic add-on-side alternative is **MQTT discovery**: when a broker is available (e.g. the official Mosquitto add-on) and `Mqtt.Enabled` is `true` (the default), [`MqttAddonService`](src/ReceiptPrinter.Service/Mqtt/MqttAddonService.cs) resolves the broker via Supervisor's Services API (`SUPERVISOR_TOKEN`, no user-entered broker config needed) and publishes retained discovery configs for a single "Receipt Printer Service" device:
+
+| Entity | Behavior |
+|---|---|
+| `button.receipt_printer_print_daily_briefing` | Same as `POST /briefing/trigger` |
+| `button.receipt_printer_check_to_dos_now` | Same as `POST /todos/check` |
+| `notify.receipt_printer_print` | `notify.send_message` prints the message as a plain receipt |
+| `binary_sensor.receipt_printer_printer_reachable` | Polled every minute via `IReceiptPrinter.PingAsync()` - never prints anything |
+
+An automation just looks like:
+
+```yaml
+- action: button.press
+  target:
+    entity_id: button.receipt_printer_print_daily_briefing
+```
+
+No `rest_command` YAML, no hardcoded add-on hostname - if no MQTT broker is configured in Home Assistant at all, this quietly does nothing and the HTTP endpoints above keep working unaffected.
 
 ## Running as a Home Assistant add-on
 
@@ -83,12 +105,12 @@ The Service doesn't need to run on the same machine as the printer - it just nee
 ```
 Home Assistant (add-on)                    PC (has the printer wired up over serial)
 ReceiptPrinter.Service      --HTTP-->      ReceiptPrinter.NetworkSerialService --serial--> Woosim printer
-(scheduler, HA polling,                    (forwards Receipt JSON straight to
- TODO-note checker)                         SerialWoosimPrinter)
+(HTTP/MQTT-triggered,                      (forwards Receipt JSON straight to
+ HA polling, TODO-note checker)             SerialWoosimPrinter)
 ```
 
 - On the PC: `cd src/ReceiptPrinter.NetworkSerialService && dotnet run` - listens on `http://0.0.0.0:5251` by default (see its `appsettings.json` for the serial port/baud).
-- In Home Assistant: **Settings -> Add-ons -> Add-on Store -> ⋮ -> Repositories**, add `https://github.com/ikkentim/woosim-printer`, then install "Receipt Printer Service" from the store. Its **Configuration** tab exposes the same `Printer`/`Location`/`HomeAssistant`/`Briefing` groups described in [Configuration](#configuration) above - set `Printer.NetworkHost` to the PC's `host:port` from above, and leave `HomeAssistant.BaseUrl`/`Token` empty (the add-on has `homeassistant_api: true`, so it talks to Home Assistant through Supervisor's proxy with an automatically-scoped token - no personal long-lived access token needed). Then start it - config changes apply live, no restart needed.
+- In Home Assistant: **Settings -> Add-ons -> Add-on Store -> ⋮ -> Repositories**, add `https://github.com/ikkentim/woosim-printer`, then install "Receipt Printer Service" from the store. Its **Configuration** tab exposes the `Printer`/`HomeAssistant`/`Briefing`/`Mqtt` groups described in [Configuration](#configuration) above - set `Printer.NetworkHost` to the PC's `host:port` from above. There's no `BaseUrl`/`Token` to fill in and no location to enter: the add-on has `homeassistant_api: true`, so it talks to Home Assistant through Supervisor's proxy with an automatically-scoped token, and reads Home Assistant's own configured coordinates for the weather widget. Then start it, and wire up an automation (HTTP `rest_command` or the MQTT button entities - see [MQTT entities](#mqtt-entities)) to actually trigger the briefing/to-do check on whatever schedule you want.
 
 The image is built and published to `ghcr.io/ikkentim/ha-{arch}-receiptprinter-service` by [`.github/workflows/builder.yaml`](.github/workflows/builder.yaml) on every push to `main` - Supervisor just pulls the prebuilt image rather than building it on-device (this repo's Dockerfile needs the whole `src/` solution as build context, since `ReceiptPrinter.Service` references its sibling projects). `config.yaml`, `Dockerfile`, `DOCS.md`, `CHANGELOG.md` and `repository.yaml` at the repo root are what make this a valid single-add-on repository - see the [Home Assistant add-on docs](https://developers.home-assistant.io/docs/add-ons) for the format.
 

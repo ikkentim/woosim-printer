@@ -1,15 +1,22 @@
 using System.Globalization;
 using System.Text.Json;
 using ReceiptPrinter.Configuration;
+using ReceiptPrinter.HomeAssistant;
 using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Widgets;
 
-public sealed class WeatherWidget(LocationOptions location) : IBriefingWidget
+public sealed class WeatherWidget(HomeAssistantOptions homeAssistant) : IBriefingWidget
 {
+    // Falls back to this only if Home Assistant's own location can't be reached at all - keeps the
+    // widget useful (with a nudge in the log) rather than just going blank.
+    private const double FallbackLatitude = 52.5546;
+    private const double FallbackLongitude = 5.9114;
+
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
-        var weather = await GetWeatherAsync(location);
+        var (lat, lon) = await GetLocationAsync();
+        var weather = await GetWeatherAsync(lat, lon);
 
         return
         [
@@ -20,13 +27,38 @@ public sealed class WeatherWidget(LocationOptions location) : IBriefingWidget
         ];
     }
 
-    private static async Task<string?> GetWeatherAsync(LocationOptions location)
+    private async Task<(double Latitude, double Longitude)> GetLocationAsync()
+    {
+        var connection = HomeAssistantConnection.Resolve(homeAssistant);
+        if (connection == null)
+        {
+            Console.WriteLine("No Home Assistant connection available for location - using fallback coordinates");
+            return (FallbackLatitude, FallbackLongitude);
+        }
+
+        try
+        {
+            var location = await HomeAssistantLocation.GetAsync(connection.RestBaseUrl, connection.Token);
+            if (location != null)
+                return location.Value;
+
+            Console.WriteLine("Home Assistant's /api/config had no latitude/longitude - using fallback coordinates");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Home Assistant location fetch failed, using fallback coordinates: {ex}");
+        }
+
+        return (FallbackLatitude, FallbackLongitude);
+    }
+
+    private static async Task<string?> GetWeatherAsync(double latitude, double longitude)
     {
         try
         {
             using var http = new HttpClient();
-            var lat = location.Latitude.ToString(CultureInfo.InvariantCulture);
-            var lon = location.Longitude.ToString(CultureInfo.InvariantCulture);
+            var lat = latitude.ToString(CultureInfo.InvariantCulture);
+            var lon = longitude.ToString(CultureInfo.InvariantCulture);
             var url = $"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}" +
                       "&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min" +
                       "&timezone=auto";
@@ -41,7 +73,7 @@ public sealed class WeatherWidget(LocationOptions location) : IBriefingWidget
             var tMax = daily.GetProperty("temperature_2m_max")[0].GetDouble();
             var tMin = daily.GetProperty("temperature_2m_min")[0].GetDouble();
 
-            return $"{location.LocationName}: {DescribeWeather(code)}, {temp:0.#}C {Localization.T("weather.now")}\n" +
+            return $"{DescribeWeather(code)}, {temp:0.#}C {Localization.T("weather.now")}\n" +
                    $"{Localization.T("weather.max")}:{tMax:0.#}C {Localization.T("weather.min")}:{tMin:0.#}C";
         }
         catch (Exception ex)

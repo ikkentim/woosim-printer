@@ -17,7 +17,7 @@ public static class DailyBriefing
         var widgetFactories = new Dictionary<string, Func<IBriefingWidget>>(StringComparer.OrdinalIgnoreCase)
         {
             ["DateHeader"] = () => new DateHeaderWidget(),
-            ["Weather"] = () => new WeatherWidget(options.Location),
+            ["Weather"] = () => new WeatherWidget(options.HomeAssistant),
             ["Calendar"] = () => new CalendarWidget(options.HomeAssistant),
             ["Todo"] = () => new TodoWidget(options.HomeAssistant),
             ["Energy"] = () => new EnergyWidget(options.HomeAssistant),

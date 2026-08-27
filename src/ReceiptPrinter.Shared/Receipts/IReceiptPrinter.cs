@@ -8,4 +8,10 @@ namespace ReceiptPrinter.Receipts;
 public interface IReceiptPrinter : IDisposable
 {
     Task PrintAsync(Receipt receipt);
+
+    /// <summary>
+    /// Best-effort connectivity check that never prints anything - used to report a "printer reachable"
+    /// status (e.g. as an MQTT binary_sensor) without wasting paper on a probe print.
+    /// </summary>
+    Task<bool> PingAsync();
 }

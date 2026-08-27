@@ -41,7 +41,7 @@ builder.Services.AddSingleton<IReceiptPrinter>(sp =>
 
 builder.Services.AddSingleton<TodoNoteStore>();
 builder.Services.AddSingleton<TodoNoteChecker>();
-builder.Services.AddHostedService<BriefingScheduler>();
+builder.Services.AddHostedService<ReceiptPrinter.Service.Mqtt.MqttAddonService>();
 
 var app = builder.Build();
 

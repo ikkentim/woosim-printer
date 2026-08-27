@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.2.0
+
+- Added MQTT discovery: when a broker is available in Home Assistant (e.g. the Mosquitto add-on), this
+  add-on now publishes a "Receipt Printer Service" device with two buttons (print daily briefing, check
+  to-dos now), a `notify` entity (print any text), and a "printer reachable" binary sensor - no YAML
+  needed, entities just show up. Broker connection details come from Supervisor's Services API, not
+  user-entered config. Turn it off with the new `Mqtt.Enabled: false` option; the HTTP endpoints are
+  unaffected either way. New optional add-on dependency: `services: [mqtt:want]` (soft - the add-on
+  still runs fine with no broker configured).
+- Added `IReceiptPrinter.PingAsync()` (network: hits `/health`; serial: checks the COM port is still
+  enumerated) backing the new reachable sensor, without ever sending a probe print.
+- **Breaking**: removed the `Location` option entirely - the weather widget now reads Home Assistant's
+  own configured latitude/longitude via `/api/config` instead (needs `HomeAssistant.BaseUrl`/`Token`, or
+  the add-on's Supervisor token). The city name is also gone from the printed weather line.
+- **Breaking**: the add-on no longer exposes `HomeAssistant.BaseUrl`/`Token` as Configuration-tab
+  options - it always uses Supervisor's own token now. (Still present as CLI/Service config for running
+  standalone outside Home Assistant.)
+- **Breaking**: removed `BriefingScheduler` and the `ScheduledBriefingEnabled`/`ScheduledHour`/
+  `ScheduledMinute` options - trigger the briefing from a Home Assistant automation instead (HTTP
+  `rest_command` or the MQTT button). Nothing in the Service runs on an internal schedule anymore.
+
 ## 1.1.2
 
 - **Fixed**: `SUPERVISOR_TOKEN` (and everything else `homeassistant_api: true` was supposed to unlock) was

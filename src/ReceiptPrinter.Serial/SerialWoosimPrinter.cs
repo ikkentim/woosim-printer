@@ -70,6 +70,14 @@ public sealed class SerialWoosimPrinter : IReceiptPrinter
             Text(element.Text);
     }
 
+    /// <summary>
+    /// Serial has no real handshake to probe - this just checks the configured COM port is still
+    /// enumerated by the OS (catches "USB-serial adapter unplugged", not "printer powered off").
+    /// </summary>
+    public Task<bool> PingAsync() =>
+        Task.FromResult(System.IO.Ports.SerialPort.GetPortNames()
+            .Contains(_serial.PortName, StringComparer.OrdinalIgnoreCase));
+
     private void Initialize() => Send(ESC, (byte)'@');
 
     private void Text(string text)
