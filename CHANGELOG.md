@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1
+
+- Added a `GET /diag/home-assistant` endpoint that reports whether Home Assistant connectivity can be
+  resolved (explicit `BaseUrl`/`Token` vs. Supervisor's `SUPERVISOR_TOKEN`), without ever exposing the
+  actual token value. Useful when the briefing comes back with calendar/to-do/energy sections empty -
+  each widget fails silently and just logs to the console, so this pinpoints whether the problem is
+  "no connection at all" vs. something failing inside an individual widget's request.
+
 ## 1.1.0
 
 - **Breaking**: replaced the flat `printer_network_host` add-on option and the file-based

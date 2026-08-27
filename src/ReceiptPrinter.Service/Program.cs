@@ -1,6 +1,7 @@
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Options;
 using ReceiptPrinter.Configuration;
+using ReceiptPrinter.HomeAssistant;
 using ReceiptPrinter.Printers.Network;
 using ReceiptPrinter.Printers.Serial;
 using ReceiptPrinter.Receipts;
@@ -61,6 +62,29 @@ app.MapPost("/todos/check", async (TodoNoteChecker checker, IReceiptPrinter prin
 {
     await checker.CheckAndPrintAsync(printer);
     return Results.Ok();
+});
+
+// Diagnostic-only endpoint: reports whether Home Assistant connectivity can be resolved at all, and
+// from which source (explicit BaseUrl/Token vs. Supervisor's auto-injected SUPERVISOR_TOKEN), without
+// ever exposing the actual token value. Useful for debugging "briefing comes back empty" reports where
+// individual widgets fail silently and just log to the console.
+app.MapGet("/diag/home-assistant", (IOptionsSnapshot<ReceiptPrinterOptions> options) =>
+{
+    var ha = options.Value.HomeAssistant;
+    var supervisorToken = Environment.GetEnvironmentVariable("SUPERVISOR_TOKEN");
+    var connection = HomeAssistantConnection.Resolve(ha);
+
+    return Results.Ok(new
+    {
+        BaseUrlConfigured = !string.IsNullOrEmpty(ha.BaseUrl),
+        TokenConfigured = !string.IsNullOrEmpty(ha.Token),
+        SupervisorTokenPresent = !string.IsNullOrEmpty(supervisorToken),
+        SupervisorTokenLength = supervisorToken?.Length ?? 0,
+        ConnectionResolved = connection != null,
+        ConnectionSource = connection == null ? null : !string.IsNullOrEmpty(ha.BaseUrl) ? "explicit" : "supervisor",
+        connection?.RestBaseUrl,
+        connection?.WebSocketUrl,
+    });
 });
 
 app.Run();
