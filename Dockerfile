@@ -37,4 +37,6 @@ RUN \
 WORKDIR /app
 COPY --from=build-env /app .
 
-CMD ["dotnet", "ReceiptPrinter.Service.dll"]
+# --urls beats ASPNETCORE_URLS in ASP.NET Core's config precedence, so this pins the bind address even
+# if something in the HA base image's entrypoint chain drops/overrides the env var.
+CMD ["dotnet", "ReceiptPrinter.Service.dll", "--urls", "http://+:8099"]
