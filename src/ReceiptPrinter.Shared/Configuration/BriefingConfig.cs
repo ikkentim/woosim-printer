@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ReceiptPrinter.Configuration;
 
@@ -19,6 +20,13 @@ public static class BriefingConfig
     private static readonly string HaConfigPath = ConfigPaths.Combine("ha-config.json");
     private static readonly string RemindersConfigPath = ConfigPaths.Combine("reminders-config.json");
     private static readonly string TodoPath = ConfigPaths.Combine("todo.txt");
+    private static readonly string SettingsPath = ConfigPaths.Combine("briefing-settings.json");
+
+    private static readonly JsonSerializerOptions SettingsJsonOptions = new()
+    {
+        WriteIndented = true,
+        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }, // "nl"/"en", not "Nl"/"En"
+    };
 
     public static LocationConfig LoadLocation()
     {
@@ -62,6 +70,28 @@ public static class BriefingConfig
         File.WriteAllText(RemindersConfigPath, JsonSerializer.Serialize(template,
             new JsonSerializerOptions { WriteIndented = true }));
         return null;
+    }
+
+    public static BriefingSettings LoadSettings()
+    {
+        if (File.Exists(SettingsPath))
+        {
+            var settings = JsonSerializer.Deserialize<BriefingSettings>(File.ReadAllText(SettingsPath), SettingsJsonOptions);
+            if (settings != null)
+                return settings;
+        }
+
+        // Defaults match the original hardcoded behaviour: Dutch, every widget in the original order,
+        // TODO notes and the scheduled daily briefing both enabled, printing at 07:00.
+        var defaultSettings = new BriefingSettings(
+            BriefingLanguage.Nl,
+            BriefingSettings.DefaultWidgetOrder.ToList(),
+            TodoNotesEnabled: true,
+            ScheduledBriefingEnabled: true,
+            ScheduledHour: 7,
+            ScheduledMinute: 0);
+        File.WriteAllText(SettingsPath, JsonSerializer.Serialize(defaultSettings, SettingsJsonOptions));
+        return defaultSettings;
     }
 
     public static List<string> LoadTodoFile()

@@ -16,4 +16,6 @@ ref/
 ha-config.json
 reminders-config.json
 briefing-config.json
+briefing-settings.json
 todo.txt
+todo-note-store.json

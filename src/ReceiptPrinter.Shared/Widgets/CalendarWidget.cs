@@ -1,4 +1,3 @@
-using System.Globalization;
 using ReceiptPrinter.Configuration;
 using ReceiptPrinter.HomeAssistant;
 using ReceiptPrinter.Receipts;
@@ -7,34 +6,32 @@ namespace ReceiptPrinter.Widgets;
 
 public sealed class CalendarWidget : IBriefingWidget
 {
-    private static readonly CultureInfo Dutch = CultureInfo.GetCultureInfo("nl-NL");
-
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
         var (today, upcoming) = await LoadAsync();
         var elements = new List<IElement>();
 
-        elements.Add(new TextElement("VANDAAG", Bold: true));
+        elements.Add(new TextElement(Localization.T("calendar.today"), Bold: true));
         if (today.Count == 0)
         {
-            elements.Add(new TextElement("(geen afspraken vandaag)"));
+            elements.Add(new TextElement(Localization.T("calendar.none_today")));
         }
         else
         {
             foreach (var ev in today)
-                elements.Add(new TextElement($"- {(ev.AllDay ? "Hele dag" : ev.Start.ToString("HH:mm"))}  {ev.Summary}"));
+                elements.Add(new TextElement($"- {(ev.AllDay ? Localization.T("calendar.all_day") : ev.Start.ToString("HH:mm"))}  {ev.Summary}"));
         }
         elements.Add(new TextElement(""));
 
-        elements.Add(new TextElement("AANKOMEND (komende 14 dagen)", Bold: true));
+        elements.Add(new TextElement(Localization.T("calendar.upcoming"), Bold: true));
         if (upcoming.Count == 0)
         {
-            elements.Add(new TextElement("(niets aankomend)"));
+            elements.Add(new TextElement(Localization.T("calendar.none_upcoming")));
         }
         else
         {
             foreach (var ev in upcoming.Take(3))
-                elements.Add(new TextElement($"- {ev.Start.ToString("ddd d MMM", Dutch)}  {ev.Summary}"));
+                elements.Add(new TextElement($"- {ev.Start.ToString("ddd d MMM", Localization.Culture)}  {ev.Summary}"));
         }
         elements.Add(new TextElement(""));
 

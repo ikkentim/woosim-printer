@@ -1,36 +1,41 @@
+using ReceiptPrinter.Configuration;
 using ReceiptPrinter.Receipts;
 using ReceiptPrinter.Widgets;
 
 namespace ReceiptPrinter.Service;
 
 /// <summary>
-/// Prints the daily briefing automatically once a day at a configured time.
+/// Prints the daily briefing automatically once a day at a configured time. Fully driven by
+/// briefing-settings.json (see BriefingConfig.LoadSettings) - re-read on every iteration, so toggling
+/// ScheduledBriefingEnabled or changing ScheduledHour/Minute takes effect without restarting the service.
 /// </summary>
 public sealed class BriefingScheduler : BackgroundService
 {
     private readonly IReceiptPrinter _printer;
-    private readonly TimeSpan _scheduledTime;
     private readonly ILogger<BriefingScheduler> _logger;
 
-    public BriefingScheduler(IReceiptPrinter printer, IConfiguration config, ILogger<BriefingScheduler> logger)
+    public BriefingScheduler(IReceiptPrinter printer, ILogger<BriefingScheduler> logger)
     {
         _printer = printer;
         _logger = logger;
-
-        // scheduled_hour/scheduled_minute come from the HA add-on's options.json when running as an
-        // add-on (see Program.cs); Briefing:ScheduledHour/Minute is the plain appsettings.json fallback.
-        var hour = config.GetValue<int?>("scheduled_hour") ?? config.GetValue("Briefing:ScheduledHour", 7);
-        var minute = config.GetValue<int?>("scheduled_minute") ?? config.GetValue("Briefing:ScheduledMinute", 0);
-        _scheduledTime = new TimeSpan(hour, minute, 0);
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var delay = TimeUntilNextRun();
-            _logger.LogInformation("Next briefing scheduled in {Delay}", delay);
+            var settings = BriefingConfig.LoadSettings();
+            var delay = TimeUntilNextRun(settings.ScheduledHour, settings.ScheduledMinute);
+            _logger.LogInformation("Next briefing check in {Delay}", delay);
             await Task.Delay(delay, stoppingToken);
+
+            // Re-read in case the schedule/enabled flag changed while we were waiting.
+            settings = BriefingConfig.LoadSettings();
+            if (!settings.ScheduledBriefingEnabled)
+            {
+                _logger.LogInformation("Scheduled daily briefing is disabled, skipping");
+                continue;
+            }
 
             try
             {
@@ -45,10 +50,10 @@ public sealed class BriefingScheduler : BackgroundService
         }
     }
 
-    private TimeSpan TimeUntilNextRun()
+    private static TimeSpan TimeUntilNextRun(int hour, int minute)
     {
         var now = DateTime.Now;
-        var next = now.Date + _scheduledTime;
+        var next = now.Date + new TimeSpan(hour, minute, 0);
         if (next <= now)
             next = next.AddDays(1);
 

@@ -1,3 +1,4 @@
+using ReceiptPrinter.Configuration;
 using ReceiptPrinter.Receipts;
 using ReceiptPrinter.Widgets;
 
@@ -7,6 +8,7 @@ namespace ReceiptPrinter.Service;
 /// Checks the current to-do list against what's already been printed. Anything new gets its own
 /// little "TODO" note printed; anything that's disappeared from the source is just forgotten (it was
 /// presumably completed and physically thrown away, per the fridge-note workflow this is built for).
+/// Controlled by briefing-settings.json's TodoNotesEnabled (see BriefingConfig.LoadSettings).
 /// </summary>
 public sealed class TodoNoteChecker
 {
@@ -19,6 +21,12 @@ public sealed class TodoNoteChecker
 
     public async Task CheckAndPrintAsync(IReceiptPrinter printer)
     {
+        var settings = BriefingConfig.LoadSettings();
+        if (!settings.TodoNotesEnabled)
+            return;
+
+        Localization.SetLanguage(settings.Language);
+
         var current = new HashSet<string>(await TodoWidget.LoadAsync());
         var alreadyPrinted = _store.Load();
 
@@ -36,7 +44,7 @@ public sealed class TodoNoteChecker
     {
         IReadOnlyList<IElement> elements =
         [
-            new TextElement("TODO", Bold: true, Width: 2, Height: 2, Justification: Justification.Center),
+            new TextElement(Localization.T("todo.note_heading"), Bold: true, Width: 2, Height: 2, Justification: Justification.Center),
             new TextElement(""),
             new TextElement(item, Justification: Justification.Center),
             new TextElement(DateTime.Now.ToString("dd-MM-yyyy"), Justification: Justification.Center),

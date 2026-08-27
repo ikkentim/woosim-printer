@@ -18,9 +18,5 @@ ports_description:
   8099/tcp: HTTP API (POST /print, /briefing/trigger, /todos/check)
 options:
   printer_network_host: "printer-pc.local:5251"
-  scheduled_hour: 7
-  scheduled_minute: 0
 schema:
   printer_network_host: str
-  scheduled_hour: int(0,23)
-  scheduled_minute: int(0,59)

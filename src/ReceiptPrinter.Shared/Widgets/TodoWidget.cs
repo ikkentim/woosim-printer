@@ -10,11 +10,11 @@ public sealed class TodoWidget : IBriefingWidget
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
         var todos = await LoadAsync();
-        var elements = new List<IElement> { new TextElement("TE DOEN", Bold: true) };
+        var elements = new List<IElement> { new TextElement(Localization.T("todo.heading"), Bold: true) };
 
         if (todos.Count == 0)
         {
-            elements.Add(new TextElement("(niets op de lijst)"));
+            elements.Add(new TextElement(Localization.T("todo.empty")));
         }
         else
         {

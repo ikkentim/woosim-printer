@@ -1,18 +1,18 @@
-using System.Globalization;
+using ReceiptPrinter.Configuration;
 using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Widgets;
 
 public sealed class DateHeaderWidget : IBriefingWidget
 {
-    private static readonly CultureInfo Dutch = CultureInfo.GetCultureInfo("nl-NL");
-
     public Task<IReadOnlyList<IElement>> RenderAsync()
     {
+        var culture = Localization.Culture;
+
         IReadOnlyList<IElement> elements =
         [
-            new TextElement(DateTime.Now.ToString("dddd", Dutch), Bold: true, Width: 2, Height: 2, Justification: Justification.Center),
-            new TextElement(DateTime.Now.ToString("d MMMM yyyy", Dutch), Justification: Justification.Center),
+            new TextElement(DateTime.Now.ToString("dddd", culture), Bold: true, Width: 2, Height: 2, Justification: Justification.Center),
+            new TextElement(DateTime.Now.ToString("d MMMM yyyy", culture), Justification: Justification.Center),
             new TextElement(""),
         ];
 

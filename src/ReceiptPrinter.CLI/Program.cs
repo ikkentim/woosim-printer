@@ -1,50 +1,76 @@
+using System.CommandLine;
 using ReceiptPrinter.Cli;
 using ReceiptPrinter.Printers.Network;
 using ReceiptPrinter.Printers.Serial;
 using ReceiptPrinter.Receipts;
 using ReceiptPrinter.Widgets;
 
-// Usage:
-//   dotnet run -- <command> [printer-type] [printer-args...]
-//   command:      test | briefing | reminders-debug
-//   printer-type: serial (default) [port=COM3] [baud=9600]
-//                 network           [host]      (talks to ReceiptPrinter.NetworkSerialService)
-var command = args.Length > 0 ? args[0] : "test";
+var rootCommand = new RootCommand("Woosim receipt printer CLI");
 
-if (command == "reminders-debug")
+rootCommand.Add(BuildPrintCommand("test", "Prints a basic ESC/POS test receipt.", () => Task.FromResult(BuildTestReceipt())));
+rootCommand.Add(BuildPrintCommand("briefing", "Builds and prints the daily briefing.", DailyBriefing.BuildAsync));
+
+var remindersDebugCommand = new Command("reminders-debug", "Lists Apple Reminders CalDAV lists and their contents, for debugging.");
+remindersDebugCommand.SetAction(async (_, _) => await RemindersDebug.RunAsync());
+rootCommand.Add(remindersDebugCommand);
+
+return await rootCommand.Parse(args).InvokeAsync();
+
+static Command BuildPrintCommand(string name, string description, Func<Task<Receipt>> buildReceipt)
 {
-    await RemindersDebug.RunAsync();
-    return;
+    var printerOption = new Option<string>("--printer", "-p")
+    {
+        Description = "Which printer transport to use: 'serial' (default) or 'network'.",
+        DefaultValueFactory = _ => "serial",
+    };
+    var portOption = new Option<string>("--port")
+    {
+        Description = "Serial port name (serial printer only).",
+        DefaultValueFactory = _ => "COM3",
+    };
+    var baudOption = new Option<int>("--baud")
+    {
+        Description = "Serial baud rate (serial printer only).",
+        DefaultValueFactory = _ => 9600,
+    };
+    var hostOption = new Option<string>("--host")
+    {
+        Description = "host:port of ReceiptPrinter.NetworkSerialService (network printer only).",
+        DefaultValueFactory = _ => "printer.local:5251",
+    };
+
+    var command = new Command(name, description) { printerOption, portOption, baudOption, hostOption };
+
+    command.SetAction(async (parseResult, cancellationToken) =>
+    {
+        using var printer = CreatePrinter(
+            parseResult.GetValue(printerOption)!,
+            parseResult.GetValue(portOption)!,
+            parseResult.GetValue(baudOption),
+            parseResult.GetValue(hostOption)!);
+
+        var receipt = await buildReceipt();
+        await printer.PrintAsync(receipt);
+        Console.WriteLine("Done.");
+    });
+
+    return command;
 }
 
-using var printer = CreatePrinter(args.Skip(1).ToArray());
-
-var receipt = command switch
+static IReceiptPrinter CreatePrinter(string printerType, string port, int baud, string host)
 {
-    "briefing" => await DailyBriefing.BuildAsync(),
-    _ => BuildTestReceipt(),
-};
-
-await printer.PrintAsync(receipt);
-Console.WriteLine("Done.");
-
-static IReceiptPrinter CreatePrinter(string[] printerArgs)
-{
-    var printerType = printerArgs.Length > 0 ? printerArgs[0] : "serial";
-
     switch (printerType)
     {
         case "network":
-            var host = printerArgs.Length > 1 ? printerArgs[1] : "printer.local:5251";
             Console.WriteLine($"Using network printer at {host}...");
             return new NetworkWoosimPrinter(host);
 
         case "serial":
+            Console.WriteLine($"Using serial printer on {port} @ {baud} baud...");
+            return new SerialWoosimPrinter(port, baud);
+
         default:
-            var portName = printerArgs.Length > 1 ? printerArgs[1] : "COM3";
-            var baudRate = printerArgs.Length > 2 ? int.Parse(printerArgs[2]) : 9600;
-            Console.WriteLine($"Using serial printer on {portName} @ {baudRate} baud...");
-            return new SerialWoosimPrinter(portName, baudRate);
+            throw new ArgumentException($"Unknown printer type '{printerType}' - expected 'serial' or 'network'.");
     }
 }
 

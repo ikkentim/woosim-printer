@@ -15,7 +15,7 @@ public sealed class WeatherWidget : IBriefingWidget
         return
         [
             new TextElement(new string('-', 32)),
-            new TextElement(weather ?? "Weer niet beschikbaar"),
+            new TextElement(weather ?? Localization.T("weather.unavailable")),
             new TextElement(new string('-', 32)),
             new TextElement(""),
         ];
@@ -42,8 +42,8 @@ public sealed class WeatherWidget : IBriefingWidget
             var tMax = daily.GetProperty("temperature_2m_max")[0].GetDouble();
             var tMin = daily.GetProperty("temperature_2m_min")[0].GetDouble();
 
-            return $"{config.LocationName}: {DescribeWeather(code)}, {temp:0.#}C nu\n" +
-                   $"Max:{tMax:0.#}C Min:{tMin:0.#}C";
+            return $"{config.LocationName}: {DescribeWeather(code)}, {temp:0.#}C {Localization.T("weather.now")}\n" +
+                   $"{Localization.T("weather.max")}:{tMax:0.#}C {Localization.T("weather.min")}:{tMin:0.#}C";
         }
         catch (Exception ex)
         {
@@ -54,14 +54,14 @@ public sealed class WeatherWidget : IBriefingWidget
 
     private static string DescribeWeather(int code) => code switch
     {
-        0 => "Helder",
-        1 or 2 or 3 => "Half bewolkt",
-        45 or 48 => "Mist",
-        51 or 53 or 55 => "Motregen",
-        61 or 63 or 65 => "Regen",
-        71 or 73 or 75 => "Sneeuw",
-        80 or 81 or 82 => "Regenbuien",
-        95 or 96 or 99 => "Onweer",
-        _ => "Onbekend",
+        0 => Localization.T("weather.clear"),
+        1 or 2 or 3 => Localization.T("weather.partly_cloudy"),
+        45 or 48 => Localization.T("weather.fog"),
+        51 or 53 or 55 => Localization.T("weather.drizzle"),
+        61 or 63 or 65 => Localization.T("weather.rain"),
+        71 or 73 or 75 => Localization.T("weather.snow"),
+        80 or 81 or 82 => Localization.T("weather.showers"),
+        95 or 96 or 99 => Localization.T("weather.thunder"),
+        _ => Localization.T("weather.unknown"),
     };
 }
