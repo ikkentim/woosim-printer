@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.2.1
+
+- **Fixed**: `Briefing.Language: nl` printed the date header (weekday/month) in English. Alpine's
+  `icu-libs` package alone ships ICU with no real locale/calendar data - `CultureInfo.GetCultureInfo`
+  "succeeds" for `nl-NL` but `DateTime.ToString` still renders English names, silently, no exception.
+  Added `icu-data-full` to the Dockerfile, which carries the actual CLDR data non-English formatting
+  needs. Confirmed the app-level code was already correct by reproducing the same formatting call
+  outside the container, where it renders correctly.
+
 ## 1.2.0
 
 - Added MQTT discovery: when a broker is available in Home Assistant (e.g. the Mosquitto add-on), this

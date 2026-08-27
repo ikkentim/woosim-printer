@@ -10,10 +10,16 @@ RUN dotnet publish ReceiptPrinter.Service/ReceiptPrinter.Service.csproj -c Relea
 FROM $BUILD_FROM
 
 # .NET's musl runtime needs these - see https://github.com/dotnet/dotnet-docker/blob/main/documentation/known-issues.md
+#
+# icu-data-full matters for anything but English: Alpine's icu-libs alone ships a stripped-down ICU with
+# no real locale/calendar data, so CultureInfo.GetCultureInfo("nl-NL") "succeeds" but DateTime.ToString
+# still renders English day/month names - no exception, just silently wrong. icu-data-full is the actual
+# CLDR data that makes non-English formatting (Briefing.Language: nl) work.
 RUN apk add --no-cache \
     ca-certificates \
     krb5-libs \
     icu-libs \
+    icu-data-full \
     libgcc \
     libintl \
     libssl3 \
