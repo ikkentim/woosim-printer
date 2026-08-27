@@ -12,8 +12,6 @@ arch:
   - aarch64
 init: false
 image: ghcr.io/ikkentim/ha-{arch}-receiptprinter-service
-startup: application
-boot: auto
 ports:
   8099/tcp: 8099
 ports_description:
