@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.7.0
+
+- `ReceiptMarkdown` (the MQTT `notify` message dialect) gained `![name]` - a line that's just
+  `![sunny]`, `![rainy]`, `![clear-night]`, etc. prints that bundled weather glyph, centered. Same
+  icon set the weather widget uses; unknown names are skipped.
+
 ## 1.6.0
 
 - The weather widget now prints a **weather icon** above the conditions line - a 72×72 monochrome

@@ -2,7 +2,6 @@ using System.Globalization;
 using System.Text.Json;
 using ReceiptPrinter.Configuration;
 using ReceiptPrinter.HomeAssistant;
-using ReceiptPrinter.Printers;
 using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Widgets;

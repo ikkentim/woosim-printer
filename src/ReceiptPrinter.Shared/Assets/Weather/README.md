@@ -2,8 +2,8 @@
 
 72×72 1-bit bitmaps (binary PBM "P4"), one per Home Assistant weather condition, embedded into
 `ReceiptPrinter.Shared` and printed via ESC/POS bit-image by `EscPosEncoder`. Loaded by
-[`WeatherIcon`](../../Printers/WeatherIcon.cs), keyed by the weather entity's state (`-` → `_` in the
-filename, e.g. `clear-night` → `clear_night.pbm`).
+[`WeatherIcon`](../../Receipts/WeatherIcon.cs), keyed by the weather entity's state (`-` → `_` in the
+filename, e.g. `clear-night` → `clear_night.pbm`). Also reachable from `ReceiptMarkdown` as `![name]`.
 
 ## Source & license
 

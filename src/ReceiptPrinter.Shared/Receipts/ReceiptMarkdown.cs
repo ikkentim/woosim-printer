@@ -14,6 +14,9 @@ namespace ReceiptPrinter.Receipts;
 /// - A line that's just "[WidgetName]" (e.g. "[Weather]") splices in that briefing widget's own output
 ///   in place of the line - see <see cref="Widgets.DailyBriefingWidget.CreateWidgetFactories"/> for the
 ///   available names. Unknown names are skipped (nothing printed for that line).
+/// - A line that's just "![name]" (e.g. "![sunny]") prints that bundled weather glyph, centered - see
+///   <see cref="WeatherIcon.ForCondition"/> (names are the Home Assistant weather conditions:
+///   "sunny", "partlycloudy", "rainy", "clear-night", ...). Unknown names are skipped.
 /// - A line starting with ">>" right-justifies; ">" centers; otherwise left (default) - any whitespace
 ///   right after the marker is trimmed. Checked before the heading marker, so e.g. "> # Heading" is a
 ///   centered heading.
@@ -46,6 +49,14 @@ public static class ReceiptMarkdown
             if (line.Trim() == "~~~")
             {
                 cut = CutStyle.Full;
+                continue;
+            }
+
+            var iconName = TryGetImageReference(line);
+            if (iconName != null)
+            {
+                if (WeatherIcon.ForCondition(iconName) is { } icon)
+                    elements.Add(icon);
                 continue;
             }
 
@@ -85,6 +96,14 @@ public static class ReceiptMarkdown
     {
         var trimmed = line.Trim();
         return trimmed.Length >= 3 && trimmed[0] == '[' && trimmed[^1] == ']' ? trimmed[1..^1] : null;
+    }
+
+    private static string? TryGetImageReference(string line)
+    {
+        var trimmed = line.Trim();
+        return trimmed.Length >= 4 && trimmed[0] == '!' && trimmed[1] == '[' && trimmed[^1] == ']'
+            ? trimmed[2..^1]
+            : null;
     }
 
     private static IEnumerable<IElement> ParseLine(string line)

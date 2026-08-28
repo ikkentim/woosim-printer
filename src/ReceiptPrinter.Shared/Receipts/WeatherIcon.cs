@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
-using ReceiptPrinter.Receipts;
 
-namespace ReceiptPrinter.Printers;
+namespace ReceiptPrinter.Receipts;
 
 /// <summary>
 /// The bundled 72x72 monochrome weather glyphs (Material Design Icons - Pictogrammers Free License,

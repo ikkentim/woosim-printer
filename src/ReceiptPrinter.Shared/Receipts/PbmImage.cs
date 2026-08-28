@@ -1,7 +1,6 @@
 using System.Text;
-using ReceiptPrinter.Receipts;
 
-namespace ReceiptPrinter.Printers;
+namespace ReceiptPrinter.Receipts;
 
 /// <summary>
 /// Minimal reader for binary PBM ("P4") 1-bit bitmaps - the format the bundled weather icons ship in

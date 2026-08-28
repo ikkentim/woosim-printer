@@ -35,6 +35,7 @@ No hardcoded add-on hostname, no YAML beyond the automation itself.
 
 - A line that's just `~~~` requests a full cut instead of the default partial one, and prints nothing for that line.
 - A line that's just `[WidgetName]` (e.g. `[Weather]`, `[Calendar]`) splices in that briefing widget's own live output - the same widgets/factories the daily briefing itself uses, including `[DailyBriefing]` for the whole thing.
+- A line that's just `![name]` prints a bundled weather glyph, centered (`![sunny]`, `![partlycloudy]`, `![rainy]`, `![pouring]`, `![snowy]`, `![fog]`, `![lightning]`, `![windy]`, `![clear-night]`, ... - the Home Assistant weather conditions). Unknown names print nothing.
 - A line starting with `>>` right-justifies; `>` centers; otherwise left (default) - checked before the heading marker, so `> # Heading` is a centered heading.
 - A line starting with `# ` prints big and bold (e.g. `# Maandag` as a heading).
 - `**bold**` and `*underline*` toggle for the enclosed text - freely mixable/nestable, multiple times per line.
@@ -51,6 +52,7 @@ No hardcoded add-on hostname, no YAML beyond the automation itself.
       # Grocery run
       **Milk**, eggs, bread
       *don't forget the receipt*
+      ![rainy]
       [Weather]
       ~~~
 ```

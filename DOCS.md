@@ -49,7 +49,8 @@ one "Receipt Printer Service" device:
 - **notify.receipt_printer_print** - `notify.send_message` prints the message. Supports a tiny markdown
   dialect entirely in the message text: a `~~~` line requests a full cut instead of the default partial
   one; a `[WidgetName]` line (e.g. `[Weather]`, `[DailyBriefing]`) splices in that widget's live output;
-  `>`/`>>` at the start of a line center/right-justify it; `# heading` for a big bold line;
+  a `![name]` line (e.g. `![rainy]`) prints a weather glyph; `>`/`>>` at the start of a line
+  center/right-justify it; `# heading` for a big bold line;
   `**bold**`/`*underline*` inline (mixable/nestable); `\*`/`\#`/`\>`/`\~`/`\\` to escape a literal
   character.
 - **binary_sensor.receipt_printer_printer_reachable** - `on`/`off`, checked every minute without
