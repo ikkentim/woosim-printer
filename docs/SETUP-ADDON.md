@@ -5,8 +5,9 @@ The Service doesn't need to run on the same machine as the printer - it just nee
 ```
 Home Assistant (add-on)                    PC (has the printer wired up over serial)
 ReceiptPrinter.Service      --HTTP-->      ReceiptPrinter.NetworkSerialService --serial--> Woosim printer
-(MQTT-triggered,                           (forwards Receipt JSON straight to
- HA polling, TODO-note checker)             SerialWoosimPrinter)
+(MQTT-triggered,                           (copies the POSTed ESC/POS bytes
+ HA polling, TODO-note checker,             straight to the serial port)
+ Receipt -> ESC/POS encoding)
 ```
 
 ## Setup steps
@@ -60,4 +61,7 @@ Supervisor just pulls the prebuilt image rather than building it on-device (this
 
 ## Wire protocol
 
-This is exactly the same wire protocol (`POST /print`, a JSON `Receipt`) the real ESP32 firmware will need to speak once it exists, so `NetworkSerialService` is a drop-in stand-in until then.
+`NetworkSerialService` speaks the same trivial wire protocol the real ESP32 firmware will, so it's a drop-in stand-in until the firmware exists:
+
+- `POST /print` with an `application/octet-stream` body of raw ESC/POS bytes - the service copies the body straight to the serial port, byte for byte. All receipt formatting happens sender-side in [`EscPosEncoder`](../src/ReceiptPrinter.Shared/Printers/EscPosEncoder.cs); this side needs no knowledge of receipts, JSON, or ESC/POS.
+- `GET /health` - returns `200 ok` without touching the printer (used for the "reachable" status).

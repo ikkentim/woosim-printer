@@ -10,6 +10,17 @@ Current setup:
 
 Goal: replace the PC + USB-serial adapter with a standalone ESP32, so the printer can be driven directly over WiFi/HTTP (e.g. from Home Assistant automations), with no PC involved.
 
+## Firmware scope
+
+The firmware stays deliberately dumb. All the receipt → ESC/POS translation happens on the sender
+(`ReceiptPrinter.Network` / `EscPosEncoder`); the ESP32 only has to:
+
+- serve `POST /print` - read the `application/octet-stream` request body and write it to the UART, byte for byte
+- serve `GET /health` - return `200` without touching the printer
+
+That's the whole contract. `ReceiptPrinter.NetworkSerialService` is a line-for-line reference
+implementation of it in C#.
+
 ## The existing cable's pinout
 
 Measured directly from the photobooth's cable:

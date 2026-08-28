@@ -8,8 +8,9 @@ flow, etc.) - this covers just the add-on.
 ## How it fits together
 
 The printer itself is still wired up over serial to a PC, not to Home Assistant. This add-on doesn't talk
-to the printer directly - it prints by sending an HTTP request to `ReceiptPrinter.NetworkSerialService`
-(a small program you run on that PC), which forwards it to the printer over serial.
+to the printer directly - it builds the receipt, encodes it to raw ESC/POS bytes, and POSTs those to
+`ReceiptPrinter.NetworkSerialService` (a small program you run on that PC), which copies them straight to
+the serial port.
 
 ```
 Home Assistant (this add-on)                PC (has the printer wired up over serial)

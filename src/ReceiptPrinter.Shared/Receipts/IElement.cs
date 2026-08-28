@@ -8,8 +8,9 @@ namespace ReceiptPrinter.Receipts;
 /// building a <see cref="Receipt"/> never need to know which.
 /// </summary>
 /// <remarks>
-/// Marked polymorphic so a <see cref="Receipt"/> can round-trip through JSON (e.g. the Service's
-/// POST /print endpoint) - add a <see cref="JsonDerivedTypeAttribute"/> here for each new element type.
+/// Marked polymorphic so a <see cref="Receipt"/> can still round-trip through JSON if needed (nothing
+/// on the print path does today - it goes out as raw ESC/POS bytes via <c>EscPosEncoder</c>) - add a
+/// <see cref="JsonDerivedTypeAttribute"/> here for each new element type.
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(TextElement), "text")]

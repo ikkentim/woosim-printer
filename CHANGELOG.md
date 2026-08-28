@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.4.0
+
+- The network print path now sends **raw ESC/POS bytes** instead of a JSON `Receipt`. Receipt →
+  ESC/POS encoding moved into a new transport-agnostic `EscPosEncoder` (in `ReceiptPrinter.Shared`),
+  used by both the serial and network printers. `ReceiptPrinter.NetworkSerialService` is now a dumb
+  passthrough - `POST /print` with an `application/octet-stream` body, copied straight to the serial
+  port - with no dependency on `ReceiptPrinter.Serial`/`.Shared` and no knowledge of receipts, JSON,
+  or ESC/POS. This is the exact contract the planned ESP32 firmware has to implement (see
+  `docs/HARDWARE.md`). No add-on config changes; `NetworkSerialService` must be updated in lockstep.
+
 ## 1.3.0
 
 - **Breaking**: removed the HTTP API entirely (`/print`, `/briefing/trigger`, `/todos/check`,

@@ -1,23 +1,19 @@
-using System.Net.Http.Json;
-using System.Text.Json;
-using System.Text.Json.Serialization;
+using ReceiptPrinter.Printers;
 using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Printers.Network;
 
 /// <summary>
-/// Drives a Woosim printer over the network by POSTing the Receipt as JSON to a small HTTP service
-/// sitting next to the actual printer. Today that's ReceiptPrinter.NetworkSerialService, standing in
-/// for the ESP32 firmware planned in docs/HARDWARE.md; once that firmware exists it just needs to speak
-/// the same tiny wire protocol (POST /print, JSON body) for this class to keep working unchanged.
+/// Drives a Woosim printer over the network: encodes the <see cref="Receipt"/> to a raw ESC/POS byte
+/// stream (<see cref="EscPosEncoder"/>) here on the sender, then POSTs those bytes to a small HTTP
+/// service sitting next to the actual printer, which copies them straight to the serial port. Today
+/// that service is ReceiptPrinter.NetworkSerialService, standing in for the ESP32 firmware planned in
+/// docs/HARDWARE.md; the wire protocol is deliberately trivial (POST /print, an
+/// <c>application/octet-stream</c> body of ESC/POS bytes) so the firmware only has to pipe HTTP to
+/// UART.
 /// </summary>
 public sealed class NetworkWoosimPrinter : IReceiptPrinter
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        Converters = { new JsonStringEnumConverter() },
-    };
-
     private readonly HttpClient _http;
 
     /// <param name="host">Host (optionally "host:port") or full base URL of the printer service, e.g.
@@ -34,7 +30,10 @@ public sealed class NetworkWoosimPrinter : IReceiptPrinter
 
     public async Task PrintAsync(Receipt receipt)
     {
-        var response = await _http.PostAsJsonAsync("print", receipt, JsonOptions);
+        using var content = new ByteArrayContent(EscPosEncoder.Encode(receipt));
+        content.Headers.ContentType = new("application/octet-stream");
+
+        using var response = await _http.PostAsync("print", content);
         response.EnsureSuccessStatusCode();
     }
 

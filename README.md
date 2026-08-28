@@ -27,10 +27,10 @@ This repository doubles as a Home Assistant **add-on repository**.
 
 A multi-project solution ([`src/ReceiptPrinter.slnx`](src/ReceiptPrinter.slnx)) split by concern:
 
-- **[`ReceiptPrinter.Shared`](src/ReceiptPrinter.Shared)** - receipt data model, widget contracts, Home Assistant integration, configuration
-- **[`ReceiptPrinter.Serial`](src/ReceiptPrinter.Serial)** - ESC/POS driver for the Woosim printer over serial
-- **[`ReceiptPrinter.Network`](src/ReceiptPrinter.Network)** - network transport (POSTs JSON receipts)
-- **[`ReceiptPrinter.NetworkSerialService`](src/ReceiptPrinter.NetworkSerialService)** - HTTP service wrapping the serial driver
+- **[`ReceiptPrinter.Shared`](src/ReceiptPrinter.Shared)** - receipt data model, the `Receipt` -> ESC/POS encoder, widget contracts, Home Assistant integration, configuration
+- **[`ReceiptPrinter.Serial`](src/ReceiptPrinter.Serial)** - drives the Woosim printer over serial (opens the port, writes the encoded bytes)
+- **[`ReceiptPrinter.Network`](src/ReceiptPrinter.Network)** - network transport (POSTs the encoded ESC/POS bytes over HTTP)
+- **[`ReceiptPrinter.NetworkSerialService`](src/ReceiptPrinter.NetworkSerialService)** - dumb HTTP-to-serial passthrough that runs next to the printer (ESP32 firmware stand-in)
 - **[`ReceiptPrinter.CLI`](src/ReceiptPrinter.CLI)** - console app for manual use
 - **[`ReceiptPrinter.Service`](src/ReceiptPrinter.Service)** - MQTT-triggered background service
 

@@ -9,8 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ReceiptPrinter.Shared\ReceiptPrinter.Shared.csproj" />
-    <ProjectReference Include="..\ReceiptPrinter.Serial\ReceiptPrinter.Serial.csproj" />
+    <PackageReference Include="System.IO.Ports" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
