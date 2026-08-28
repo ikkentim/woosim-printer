@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using ReceiptPrinter.Configuration;
 using ReceiptPrinter.HomeAssistant;
+using ReceiptPrinter.Printers;
 using ReceiptPrinter.Receipts;
 
 namespace ReceiptPrinter.Widgets;
@@ -19,20 +20,24 @@ public sealed class WeatherWidget(HomeAssistantOptions homeAssistant) : IBriefin
     private const double FallbackLatitude = 52.5546;
     private const double FallbackLongitude = 5.9114;
 
+    /// <summary>A rendered weather line, plus the Home Assistant condition key for its printed icon.</summary>
+    private sealed record WeatherRender(string Text, string? Condition);
+
     public async Task<IReadOnlyList<IElement>> RenderAsync()
     {
         var weather = await GetFromHomeAssistantAsync() ?? await GetFromOpenMeteoAsync();
 
-        return
-        [
-            new TextElement(new string('-', 32)),
-            new TextElement(weather ?? Localization.T("weather.unavailable")),
-            new TextElement(new string('-', 32)),
-            new TextElement(""),
-        ];
+        var elements = new List<IElement> { new TextElement(new string('-', 32)) };
+        if (WeatherIcon.ForCondition(weather?.Condition) is { } icon)
+            elements.Add(icon);
+        elements.Add(new TextElement(weather?.Text ?? Localization.T("weather.unavailable")));
+        elements.Add(new TextElement(new string('-', 32)));
+        elements.Add(new TextElement(""));
+
+        return elements;
     }
 
-    private async Task<string?> GetFromHomeAssistantAsync()
+    private async Task<WeatherRender?> GetFromHomeAssistantAsync()
     {
         var connection = HomeAssistantConnection.Resolve(homeAssistant);
         if (connection == null)
@@ -47,7 +52,8 @@ public sealed class WeatherWidget(HomeAssistantOptions homeAssistant) : IBriefin
                 return null;
             }
 
-            return Format(DescribeCondition(reading.Condition), reading.Temperature, reading.TempHigh, reading.TempLow);
+            var text = Format(DescribeCondition(reading.Condition), reading.Temperature, reading.TempHigh, reading.TempLow);
+            return new WeatherRender(text, reading.Condition);
         }
         catch (Exception ex)
         {
@@ -56,7 +62,7 @@ public sealed class WeatherWidget(HomeAssistantOptions homeAssistant) : IBriefin
         }
     }
 
-    private async Task<string?> GetFromOpenMeteoAsync()
+    private async Task<WeatherRender?> GetFromOpenMeteoAsync()
     {
         var (lat, lon) = await GetLocationAsync();
 
@@ -79,7 +85,7 @@ public sealed class WeatherWidget(HomeAssistantOptions homeAssistant) : IBriefin
             var tMax = daily.GetProperty("temperature_2m_max")[0].GetDouble();
             var tMin = daily.GetProperty("temperature_2m_min")[0].GetDouble();
 
-            return Format(DescribeWeatherCode(code), temp, tMax, tMin);
+            return new WeatherRender(Format(DescribeWeatherCode(code), temp, tMax, tMin), WmoToCondition(code));
         }
         catch (Exception ex)
         {
@@ -151,5 +157,19 @@ public sealed class WeatherWidget(HomeAssistantOptions homeAssistant) : IBriefin
         80 or 81 or 82 => Localization.T("weather.showers"),
         95 or 96 or 99 => Localization.T("weather.thunder"),
         _ => Localization.T("weather.unknown"),
+    };
+
+    /// <summary>Maps an open-meteo WMO weather code to a Home Assistant condition, for icon lookup.</summary>
+    private static string? WmoToCondition(int code) => code switch
+    {
+        0 => "sunny",
+        1 or 2 => "partlycloudy",
+        3 => "cloudy",
+        45 or 48 => "fog",
+        51 or 53 or 55 or 56 or 57 or 61 or 63 => "rainy",
+        65 or 66 or 67 or 80 or 81 or 82 => "pouring",
+        71 or 73 or 75 or 77 or 85 or 86 => "snowy",
+        95 or 96 or 99 => "lightning",
+        _ => null,
     };
 }

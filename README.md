@@ -53,3 +53,7 @@ The [docs/](docs/) folder contains detailed guides organized by topic:
 ## License
 
 [MIT](LICENSE)
+
+Bundled weather icons are [Material Design Icons](https://pictogrammers.com/library/mdi/) under the
+[Pictogrammers Free License](https://pictogrammers.com/docs/general/license/) - see
+[`src/ReceiptPrinter.Shared/Assets/Weather/README.md`](src/ReceiptPrinter.Shared/Assets/Weather/README.md).

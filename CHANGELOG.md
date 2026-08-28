@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.6.0
+
+- The weather widget now prints a **weather icon** above the conditions line - a 72×72 monochrome
+  glyph via the printer's ESC/POS bit-image command, picked from the Home Assistant condition (or the
+  open-meteo code on the fallback path). Icons are Material Design Icons (`weather-*`, Pictogrammers
+  Free License), rasterised to 1-bit and bundled with `ReceiptPrinter.Shared`; an unknown condition
+  just prints the text with no icon.
+- New `ImageElement` receipt element + `ESC *` support in `EscPosEncoder` (24-dot bands), so receipts
+  can carry raster images. Still just bytes on the wire - the network passthrough / ESP32 needs no
+  changes.
+
 ## 1.5.0
 
 - Two new briefing widgets, both fed by the same auto-discovered Home Assistant `weather.*` entity via

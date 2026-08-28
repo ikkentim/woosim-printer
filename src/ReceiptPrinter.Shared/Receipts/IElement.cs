@@ -14,6 +14,7 @@ namespace ReceiptPrinter.Receipts;
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "type")]
 [JsonDerivedType(typeof(TextElement), "text")]
+[JsonDerivedType(typeof(ImageElement), "image")]
 public interface IElement
 {
 }
