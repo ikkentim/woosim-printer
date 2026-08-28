@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0
+
+- Two new briefing widgets, both fed by the same auto-discovered Home Assistant `weather.*` entity via
+  `weather.get_forecasts` (`type: hourly`):
+  - **`HourlyWeather`** - temperature for the next ~12 hours, sampled every 3 hours
+    (`09u 15C  12u 19C  15u 21C ...`).
+  - **`HourlyRain`** - a one-char-per-hour precipitation strip for the next 12 hours
+    (`|..:++#.....|`) with a plain-language summary (`Droog de komende 12u` / `Neerslag ~10-13u`).
+  Both render nothing when there's no hourly forecast available, so they're safe to leave in the list.
+  Added to the default widget order (after `Weather`); remove them from `Briefing.Widgets` to opt out.
+
 ## 1.4.0
 
 - The network print path now sends **raw ESC/POS bytes** instead of a JSON `Receipt`. Receipt →

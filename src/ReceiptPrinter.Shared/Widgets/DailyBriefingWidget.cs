@@ -20,6 +20,8 @@ public sealed class DailyBriefingWidget(ReceiptPrinterOptions options) : IBriefi
         {
             ["DateHeader"] = () => new DateHeaderWidget(),
             ["Weather"] = () => new WeatherWidget(options.HomeAssistant),
+            ["HourlyWeather"] = () => new HourlyWeatherWidget(options.HomeAssistant),
+            ["HourlyRain"] = () => new HourlyRainWidget(options.HomeAssistant),
             ["Calendar"] = () => new CalendarWidget(options.HomeAssistant),
             ["Todo"] = () => new TodoWidget(options.HomeAssistant),
             ["Energy"] = () => new EnergyWidget(options.HomeAssistant),
