@@ -4,55 +4,146 @@ using System.Text.Json;
 
 namespace ReceiptPrinter.HomeAssistant;
 
-/// <summary>Current conditions plus today's high/low, as read from a Home Assistant weather entity.</summary>
-public record HomeAssistantWeatherReading(string Condition, double? Temperature, double? TempHigh, double? TempLow);
-
 /// <summary>One hour of forecast: local time, temperature (C), and precipitation for that hour (mm).</summary>
 public record HourlyForecastPoint(DateTimeOffset Time, double? Temperature, double? Precipitation);
 
 /// <summary>
-/// Reads weather from Home Assistant's own weather integration rather than calling a third-party API:
+/// Everything the weather widgets need from Home Assistant in one shot: current conditions, today's
+/// high/low, the hourly forecast, and today's sunrise/sunset (from <c>sun.sun</c>, null if that entity
+/// isn't present). <see cref="Condition"/> is null when there's no usable weather entity (the
+/// current-conditions widget then falls back to open-meteo).
+/// </summary>
+public record WeatherSnapshot(
+    string? Condition,
+    double? Temperature,
+    double? TempHigh,
+    double? TempLow,
+    IReadOnlyList<HourlyForecastPoint> Hourly,
+    DateTimeOffset? SunriseToday,
+    DateTimeOffset? SunsetToday)
+{
+    /// <summary>
+    /// The hourly points that fall within today's daylight - from the hour containing sunrise through
+    /// the hour containing sunset. Falls back to every remaining hour of today when sun times are
+    /// unknown (no <c>sun.sun</c> entity).
+    /// </summary>
+    public IReadOnlyList<HourlyForecastPoint> DaytimeHours()
+    {
+        var today = DateTimeOffset.Now.Date;
+        var fromHour = SunriseToday?.Hour ?? 0;
+        var toHour = SunsetToday?.Hour ?? 23;
+
+        return Hourly
+            .Where(p => p.Time.Date == today && p.Time.Hour >= fromHour && p.Time.Hour <= toHour)
+            .ToArray();
+    }
+}
+
+/// <summary>
+/// Reads weather from Home Assistant's own weather integration rather than a third-party API:
 /// auto-discovers the first <c>weather.*</c> entity, then reads its state/attributes and the
 /// <c>weather.get_forecasts</c> service (modern Home Assistant no longer exposes a <c>forecast</c>
-/// attribute directly).
+/// attribute directly). One <see cref="GetSnapshotAsync"/> call does every request; the result is
+/// briefly cached so the three weather widgets in a briefing share it instead of each re-fetching.
 /// </summary>
 public static class HomeAssistantWeather
 {
-    /// <summary>Current condition + temperature, plus today's daily high/low.</summary>
-    public static async Task<HomeAssistantWeatherReading?> GetAsync(string restBaseUrl, string token)
+    private static readonly TimeSpan CacheTtl = TimeSpan.FromSeconds(90);
+    private static readonly SemaphoreSlim CacheLock = new(1, 1);
+    private static string? _cacheKey;
+    private static DateTime _cachedAtUtc;
+    private static WeatherSnapshot? _cached;
+
+    public static async Task<WeatherSnapshot> GetSnapshotAsync(string restBaseUrl, string token)
     {
         var baseUrl = restBaseUrl.TrimEnd('/');
+
+        await CacheLock.WaitAsync();
+        try
+        {
+            if (_cached != null && _cacheKey == baseUrl && DateTime.UtcNow - _cachedAtUtc < CacheTtl)
+                return _cached;
+
+            _cached = await FetchAsync(baseUrl, token);
+            _cacheKey = baseUrl;
+            _cachedAtUtc = DateTime.UtcNow;
+            return _cached;
+        }
+        finally
+        {
+            CacheLock.Release();
+        }
+    }
+
+    private static async Task<WeatherSnapshot> FetchAsync(string baseUrl, string token)
+    {
         using var http = CreateClient(token);
+
+        var (sunrise, sunset) = await GetSunTimesAsync(http, baseUrl);
 
         var entityId = await FindWeatherEntityAsync(http, baseUrl);
         if (entityId == null)
-            return null;
+        {
+            Console.WriteLine("No weather.* entity found in Home Assistant");
+            return new WeatherSnapshot(null, null, null, null, Array.Empty<HourlyForecastPoint>(), sunrise, sunset);
+        }
 
-        var stateJson = await http.GetStringAsync($"{baseUrl}/api/states/{entityId}");
-        using var stateDoc = JsonDocument.Parse(stateJson);
-        var root = stateDoc.RootElement;
+        string? condition = null;
+        double? temperature = null;
+        try
+        {
+            var stateJson = await http.GetStringAsync($"{baseUrl}/api/states/{entityId}");
+            using var stateDoc = JsonDocument.Parse(stateJson);
+            var root = stateDoc.RootElement;
 
-        var condition = root.GetProperty("state").GetString() ?? "";
-        double? temperature = root.TryGetProperty("attributes", out var attrs) ? GetNumber(attrs, "temperature") : null;
+            condition = root.GetProperty("state").GetString();
+            if (root.TryGetProperty("attributes", out var attrs))
+                temperature = GetNumber(attrs, "temperature");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Home Assistant weather state fetch failed: {ex}");
+        }
 
         var (high, low) = await GetTodayHighLowAsync(http, baseUrl, entityId);
+        var hourly = await GetHourlyAsync(http, baseUrl, entityId);
 
-        return new HomeAssistantWeatherReading(condition, temperature, high, low);
+        return new WeatherSnapshot(condition, temperature, high, low, hourly, sunrise, sunset);
     }
 
     /// <summary>
-    /// The next <paramref name="maxHours"/> hourly forecast points from the auto-discovered weather
-    /// entity. Empty if there's no weather entity, or it has no hourly forecast.
+    /// Today's sunrise/sunset from <c>sun.sun</c>. The entity only exposes the <em>next</em> events, so
+    /// one of them belongs to tomorrow depending on the time of day - that one comes back null.
     /// </summary>
-    public static async Task<IReadOnlyList<HourlyForecastPoint>> GetHourlyAsync(string restBaseUrl, string token, int maxHours)
+    private static async Task<(DateTimeOffset? Sunrise, DateTimeOffset? Sunset)> GetSunTimesAsync(HttpClient http, string baseUrl)
     {
-        var baseUrl = restBaseUrl.TrimEnd('/');
-        using var http = CreateClient(token);
+        try
+        {
+            var json = await http.GetStringAsync($"{baseUrl}/api/states/sun.sun");
+            using var doc = JsonDocument.Parse(json);
+            if (!doc.RootElement.TryGetProperty("attributes", out var attrs))
+                return (null, null);
 
-        var entityId = await FindWeatherEntityAsync(http, baseUrl);
-        if (entityId == null)
-            return Array.Empty<HourlyForecastPoint>();
+            var today = DateTimeOffset.Now.Date;
+            var rising = ParseTime(attrs, "next_rising");
+            var setting = ParseTime(attrs, "next_setting");
 
+            return (rising?.Date == today ? rising : null, setting?.Date == today ? setting : null);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Home Assistant sun.sun fetch failed: {ex}");
+            return (null, null);
+        }
+    }
+
+    private static DateTimeOffset? ParseTime(JsonElement obj, string name) =>
+        obj.TryGetProperty(name, out var v) && v.GetString() is { } s && DateTimeOffset.TryParse(s, out var dt)
+            ? dt.ToLocalTime()
+            : null;
+
+    private static async Task<IReadOnlyList<HourlyForecastPoint>> GetHourlyAsync(HttpClient http, string baseUrl, string entityId)
+    {
         var json = await GetForecastsAsync(http, baseUrl, entityId, "hourly");
         if (json == null)
             return Array.Empty<HourlyForecastPoint>();
@@ -71,13 +162,13 @@ public static class HomeAssistantWeather
                 GetNumber(e, "temperature"),
                 GetNumber(e, "precipitation")))
             .Where(p => p.Time > cutoff)
-            .Take(maxHours)
+            .Take(24)
             .ToArray();
     }
 
     /// <summary>
     /// Today's daily bucket. Best-effort: an entity with no daily forecast just yields no high/low,
-    /// and the caller still prints the current conditions.
+    /// and the caller still shows the current conditions.
     /// </summary>
     private static async Task<(double? High, double? Low)> GetTodayHighLowAsync(HttpClient http, string baseUrl, string entityId)
     {

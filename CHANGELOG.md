@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.8.0
+
+- The `HourlyRain` widget is now a **printed bar chart** instead of a number grid: one bar per daylight
+  hour, the mm value above each rain peak, an hour scale (every 2h, with the end always marked) below,
+  and a day total. A dry day is still just one text line. The chart is rasterised in-process (no
+  imaging library) and printed via the same bit-image path as the weather icons.
+- `HourlyRain` (and the current-conditions widget) now only cover **today's daylight hours** - sunrise
+  to sunset, read from Home Assistant's `sun.sun` entity.
+- **Removed the `HourlyWeather` (temperature-by-hour) widget** - not useful enough on paper. Drop it
+  from `Briefing.Widgets` if you had it listed.
+- All three weather-related widgets now share **one** set of Home Assistant calls per briefing
+  (`/api/states`, the weather state, and the daily+hourly forecasts), cached for 90s, instead of each
+  re-fetching.
+
 ## 1.7.1
 
 - **Fixed**: the first weather icon after a `# heading` printed mangled (torn into bands with white

@@ -44,15 +44,15 @@ public sealed class WeatherWidget(HomeAssistantOptions homeAssistant) : IBriefin
 
         try
         {
-            var reading = await HomeAssistantWeather.GetAsync(connection.RestBaseUrl, connection.Token);
-            if (reading == null)
+            var snapshot = await HomeAssistantWeather.GetSnapshotAsync(connection.RestBaseUrl, connection.Token);
+            if (snapshot.Condition == null)
             {
-                Console.WriteLine("No weather.* entity found in Home Assistant - falling back to open-meteo");
+                Console.WriteLine("No usable weather.* entity in Home Assistant - falling back to open-meteo");
                 return null;
             }
 
-            var text = Format(DescribeCondition(reading.Condition), reading.Temperature, reading.TempHigh, reading.TempLow);
-            return new WeatherRender(text, reading.Condition);
+            var text = Format(DescribeCondition(snapshot.Condition), snapshot.Temperature, snapshot.TempHigh, snapshot.TempLow);
+            return new WeatherRender(text, snapshot.Condition);
         }
         catch (Exception ex)
         {

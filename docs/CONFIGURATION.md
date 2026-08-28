@@ -34,7 +34,7 @@ Everything (printer transport, Home Assistant, the briefing itself) is a single 
 ### Briefing
 
 - **`Language`** - `Nl` or `En` - translates every widget's labels via [`Localization.cs`](../src/ReceiptPrinter.Shared/Configuration/Localization.cs)
-- **`Widgets`** - which to run and in what order. Valid names: `DateHeader`, `Weather`, `HourlyWeather` (temperature for the next ~12h), `HourlyRain` (per-hour precipitation strip for the next 12h), `Calendar`, `Todo`, `Energy`. Empty/omitted falls back to the default order (all of them). `HourlyWeather`/`HourlyRain` render nothing if Home Assistant has no hourly forecast, so they're safe to leave in.
+- **`Widgets`** - which to run and in what order. Valid names: `DateHeader`, `Weather`, `HourlyRain` (a bar chart of today's precipitation per hour, from `weather.get_forecasts`), `Calendar`, `Todo`, `Energy`. Empty/omitted falls back to the default order (all of them). `HourlyRain` renders nothing if Home Assistant has no hourly forecast, so it's safe to leave in.
 - **`TodoNotesEnabled`** - whether the Service's to-do-note checker runs (false = disabled)
 
 ## File locations
