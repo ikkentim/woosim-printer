@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.9.0
+
+- The current-weather widget is split in two: **`WeatherIcon`** (the condition glyph + condition +
+  current temperature) and **`Weather`** (supplementary lines only - today's high/low, humidity, wind
+  - deliberately not repeating what `WeatherIcon` shows). Default order is `WeatherIcon`, `Weather`,
+  `HourlyRain`.
+- `Weather`'s detail lines use a left/right split layout across the full 42-character width
+  (`Max 18°C ... Min 12°C`), and humidity + wind are now shown (from the weather entity's attributes,
+  or open-meteo on the fallback path).
+- Current conditions are resolved once (`CurrentWeather`) and shared by both widgets, on top of the
+  existing shared forecast fetch.
+
 ## 1.8.0
 
 - The `HourlyRain` widget is now a **printed bar chart** instead of a number grid: one bar per daylight

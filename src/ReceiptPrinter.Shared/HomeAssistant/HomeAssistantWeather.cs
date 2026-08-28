@@ -18,6 +18,9 @@ public record WeatherSnapshot(
     double? Temperature,
     double? TempHigh,
     double? TempLow,
+    double? Humidity,
+    double? WindSpeed,
+    string? WindUnit,
     IReadOnlyList<HourlyForecastPoint> Hourly,
     DateTimeOffset? SunriseToday,
     DateTimeOffset? SunsetToday)
@@ -85,11 +88,12 @@ public static class HomeAssistantWeather
         if (entityId == null)
         {
             Console.WriteLine("No weather.* entity found in Home Assistant");
-            return new WeatherSnapshot(null, null, null, null, Array.Empty<HourlyForecastPoint>(), sunrise, sunset);
+            return new WeatherSnapshot(null, null, null, null, null, null, null, Array.Empty<HourlyForecastPoint>(), sunrise, sunset);
         }
 
         string? condition = null;
-        double? temperature = null;
+        double? temperature = null, humidity = null, windSpeed = null;
+        string? windUnit = null;
         try
         {
             var stateJson = await http.GetStringAsync($"{baseUrl}/api/states/{entityId}");
@@ -98,7 +102,12 @@ public static class HomeAssistantWeather
 
             condition = root.GetProperty("state").GetString();
             if (root.TryGetProperty("attributes", out var attrs))
+            {
                 temperature = GetNumber(attrs, "temperature");
+                humidity = GetNumber(attrs, "humidity");
+                windSpeed = GetNumber(attrs, "wind_speed");
+                windUnit = attrs.TryGetProperty("wind_speed_unit", out var u) ? u.GetString() : null;
+            }
         }
         catch (Exception ex)
         {
@@ -108,7 +117,7 @@ public static class HomeAssistantWeather
         var (high, low) = await GetTodayHighLowAsync(http, baseUrl, entityId);
         var hourly = await GetHourlyAsync(http, baseUrl, entityId);
 
-        return new WeatherSnapshot(condition, temperature, high, low, hourly, sunrise, sunset);
+        return new WeatherSnapshot(condition, temperature, high, low, humidity, windSpeed, windUnit, hourly, sunrise, sunset);
     }
 
     /// <summary>

@@ -18,9 +18,10 @@ public static class Localization
     private static readonly Dictionary<string, (string Nl, string En)> Strings = new()
     {
         ["weather.unavailable"] = ("Weer niet beschikbaar", "Weather unavailable"),
-        ["weather.now"] = ("nu", "now"),
         ["weather.max"] = ("Max", "Max"),
         ["weather.min"] = ("Min", "Min"),
+        ["weather.humidity"] = ("Luchtvocht", "Humidity"),
+        ["weather.wind"] = ("Wind", "Wind"),
         ["weather.clear"] = ("Helder", "Clear"),
         ["weather.partly_cloudy"] = ("Half bewolkt", "Partly cloudy"),
         ["weather.cloudy"] = ("Bewolkt", "Cloudy"),

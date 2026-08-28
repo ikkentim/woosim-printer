@@ -1,6 +1,6 @@
 # https://developers.home-assistant.io/docs/add-ons/configuration#add-on-config
 name: "Receipt Printer Service"
-version: "1.8.0"
+version: "1.9.0"
 slug: receiptprinter_service
 url: https://github.com/ikkentim/woosim-printer
 description: >-
@@ -37,6 +37,7 @@ options:
     Language: "nl"
     Widgets:
       - "DateHeader"
+      - "WeatherIcon"
       - "Weather"
       - "HourlyRain"
       - "Calendar"

@@ -19,6 +19,7 @@ public sealed class DailyBriefingWidget(ReceiptPrinterOptions options) : IBriefi
         new(StringComparer.OrdinalIgnoreCase)
         {
             ["DateHeader"] = () => new DateHeaderWidget(),
+            ["WeatherIcon"] = () => new WeatherIconWidget(options.HomeAssistant),
             ["Weather"] = () => new WeatherWidget(options.HomeAssistant),
             ["HourlyRain"] = () => new HourlyRainWidget(options.HomeAssistant),
             ["Calendar"] = () => new CalendarWidget(options.HomeAssistant),

@@ -40,7 +40,7 @@ public enum BriefingLanguage { Nl, En }
 public sealed class BriefingOptions
 {
     public static readonly IReadOnlyList<string> DefaultWidgetOrder =
-        ["DateHeader", "Weather", "HourlyRain", "Calendar", "Todo", "Energy"];
+        ["DateHeader", "WeatherIcon", "Weather", "HourlyRain", "Calendar", "Todo", "Energy"];
 
     public BriefingLanguage Language { get; set; } = BriefingLanguage.Nl;
 
