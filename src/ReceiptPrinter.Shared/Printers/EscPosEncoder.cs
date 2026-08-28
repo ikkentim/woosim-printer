@@ -17,8 +17,13 @@ public static class EscPosEncoder
     private const byte GS = 0x1D;
     private const byte LF = 0x0A;
 
-    // 24-dot double density: one ESC * band is 24 dots tall, square-ish pixels at the head's 203 DPI.
+    // ESC * 24-dot double density: each band is 24 dots tall, square-ish pixels at the head's 203 DPI.
     private const int BandHeight = 24;
+
+    // The tear bar sits ~15mm above the head, so feed this much before every cut/tear or the last line
+    // of content lands in the tear-off zone. Trailing blank lines are stripped first (see Encode), so
+    // this is the whole bottom margin - not added on top of blank lines the content happened to carry.
+    private const byte PreCutFeedDots = 120;
 
     private static readonly Encoding Cp437;
 
@@ -43,9 +48,15 @@ public static class EscPosEncoder
         // Reset to a known state (clears bold/underline/size/justification left by a previous job).
         Raw(buffer, ESC, (byte)'@');
 
-        foreach (var element in receipt.Elements)
+        // Trailing blank lines do nothing useful right before a cut - drop them; the fixed pre-cut
+        // feed below is the entire bottom margin.
+        var count = receipt.Elements.Count;
+        while (count > 0 && receipt.Elements[count - 1] is TextElement { Text.Length: 0 })
+            count--;
+
+        for (var i = 0; i < count; i++)
         {
-            switch (element)
+            switch (receipt.Elements[i])
             {
                 case TextElement text:
                     RenderText(buffer, text);
@@ -54,10 +65,11 @@ public static class EscPosEncoder
                     RenderImage(buffer, image);
                     break;
                 default:
-                    throw new NotSupportedException($"Unsupported element type: {element.GetType().Name}");
+                    throw new NotSupportedException($"Unsupported element type: {receipt.Elements[i].GetType().Name}");
             }
         }
 
+        Raw(buffer, ESC, (byte)'J', PreCutFeedDots); // tear-bar clearance
         Raw(buffer, GS, (byte)'V', (byte)receipt.Cut);
 
         return buffer.ToArray();
@@ -76,15 +88,21 @@ public static class EscPosEncoder
     }
 
     /// <summary>
-    /// Emits the image as a stack of <c>ESC *</c> bit-image bands. Line spacing is pinned to the band
-    /// height for the duration so the bands butt together with no white gaps, then restored.
+    /// Emits the image as a vertical stack of <c>ESC *</c> 24-dot bit-image bands, each followed by a
+    /// line feed at 24-dot spacing so they butt together.
     /// </summary>
     private static void RenderImage(List<byte> buffer, ImageElement image)
     {
         var stride = (image.Width + 7) / 8;
 
+        // This firmware's ESC * honours an active double-size / emphasis state (e.g. straight after a
+        // "# heading" line), which mangles the image - clear those and the char code table first.
+        Raw(buffer, GS, (byte)'!', 0);
+        Raw(buffer, ESC, (byte)'E', 0);
+        Raw(buffer, ESC, (byte)'-', 0);
+
         Raw(buffer, ESC, (byte)'a', (byte)image.Justification);
-        Raw(buffer, ESC, (byte)'3', BandHeight); // set line spacing to n dots
+        Raw(buffer, ESC, (byte)'3', BandHeight); // line spacing = one band, so bands butt together
 
         for (var top = 0; top < image.Height; top += BandHeight)
         {

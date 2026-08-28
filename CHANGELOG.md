@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.7.1
+
+- **Fixed**: the first weather icon after a `# heading` printed mangled (torn into bands with white
+  gaps). This printer's `ESC *` bit-image honours an active double-size / emphasis state despite the
+  manual saying otherwise; the encoder now clears size/bold/underline before every image.
+- **Fixed**: the last line of a receipt could sit in the tear-off zone. Trailing blank lines are now
+  stripped and the encoder always feeds a fixed ~15mm before the cut - one consistent bottom margin on
+  every path, instead of a variable stack of blank lines. Removed `ReceiptMarkdown`'s trailing-blank
+  top-up and the daily briefing's four spacer lines.
+
 ## 1.7.0
 
 - `ReceiptMarkdown` (the MQTT `notify` message dialect) gained `![name]` - a line that's just

@@ -30,10 +30,6 @@ namespace ReceiptPrinter.Receipts;
 /// </summary>
 public static class ReceiptMarkdown
 {
-    // Enough feed distance before the cutter that the last line of real content doesn't get sliced
-    // through - a full cut in particular needs more slack than a couple of lines' worth.
-    private const int MinimumTrailingBlankLines = 3;
-
     /// <param name="resolveWidget">Resolves a "[WidgetName]" line to that widget's rendered elements -
     /// omit to just skip such lines. Kept as a delegate (rather than this class taking a
     /// ReceiptPrinterOptions directly) so this stays a plain text-formatting utility with no dependency
@@ -71,25 +67,7 @@ public static class ReceiptMarkdown
             elements.AddRange(ParseLine(line));
         }
 
-        EnsureTrailingBlankLines(elements);
-
         return new Receipt(elements, cut);
-    }
-
-    /// <summary>
-    /// Tail inspection, not a blind append: counts however many blank lines are already at the end
-    /// (whether the caller's text ended with some, or a spliced-in widget's own output did) and only
-    /// tops up the shortfall - never trims. So an automation that wants more room can just add its own
-    /// blank lines before the trailing "~~~", and this won't fight it down to a fixed count.
-    /// </summary>
-    private static void EnsureTrailingBlankLines(List<IElement> elements)
-    {
-        var trailingBlanks = 0;
-        while (trailingBlanks < elements.Count && elements[^(trailingBlanks + 1)] is TextElement { Text.Length: 0 })
-            trailingBlanks++;
-
-        for (var i = trailingBlanks; i < MinimumTrailingBlankLines; i++)
-            elements.Add(new TextElement(""));
     }
 
     private static string? TryGetWidgetReference(string line)

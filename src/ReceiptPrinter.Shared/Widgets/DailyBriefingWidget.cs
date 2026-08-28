@@ -45,12 +45,6 @@ public sealed class DailyBriefingWidget(ReceiptPrinterOptions options) : IBriefi
             elements.AddRange(await factory().RenderAsync());
         }
 
-        // A little extra breathing room before the cut.
-        elements.Add(new TextElement(""));
-        elements.Add(new TextElement(""));
-        elements.Add(new TextElement(""));
-        elements.Add(new TextElement(""));
-
         return elements;
     }
 }
