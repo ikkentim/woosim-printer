@@ -29,7 +29,7 @@ Everything (printer transport, Home Assistant, the briefing itself) is a single 
 - **`GridExportEntityIds`** - list of entities for grid export (summed)
 - **`GasEntityId`** - entity for gas usage
 
-> **About Home Assistant add-on**: The add-on doesn't need `BaseUrl`/`Token` at all - it reaches Home Assistant through Supervisor's proxy using its own automatically-injected token. It also reads Home Assistant's own configured latitude/longitude for the weather widget, so there's no separate location setting.
+> **About Home Assistant add-on**: The add-on doesn't need `BaseUrl`/`Token` at all - it reaches Home Assistant through Supervisor's proxy using its own automatically-injected token. The weather widget needs no config either - it auto-discovers a `weather.*` entity, falling back to open-meteo (using Home Assistant's own configured latitude/longitude) if there isn't one.
 
 ### Briefing
 

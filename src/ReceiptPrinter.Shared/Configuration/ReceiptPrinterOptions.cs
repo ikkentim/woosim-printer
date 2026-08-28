@@ -16,8 +16,8 @@ public sealed class ReceiptPrinterOptions
 /// BaseUrl/Token are only needed when NOT running as this repo's Home Assistant add-on - the add-on
 /// instead reaches Home Assistant through Supervisor's proxy using its own automatically-injected
 /// token, with no personal long-lived access token required. See <see cref="HomeAssistantConnection"/>.
-/// The weather widget's coordinates also come from here (Home Assistant's own /api/config), so there's
-/// no separate location setting to fill in either way.
+/// The weather widget needs no settings here either: it auto-discovers a weather.* entity, and its
+/// open-meteo fallback reads coordinates from Home Assistant's own /api/config.
 /// </summary>
 public sealed class HomeAssistantOptions
 {

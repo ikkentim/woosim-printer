@@ -28,9 +28,10 @@ ReceiptPrinter.Service      --HTTP-->       ReceiptPrinter.NetworkSerialService 
    - `Printer.NetworkHost` - that PC's `host:port` (e.g. `192.168.1.50:5251`).
    - `HomeAssistant` - `TodoEntityId` etc. for the to-do list and Energy dashboard entities, per the main
      README. There's nothing else to fill in here: this add-on already has `homeassistant_api: true`, so
-     it talks to Home Assistant through Supervisor's own proxy with a scoped token automatically, and
-     reads Home Assistant's own configured latitude/longitude for the weather widget - no personal
-     long-lived access token and no location to enter.
+     it talks to Home Assistant through Supervisor's own proxy with a scoped token automatically - no
+     personal long-lived access token to enter. The weather widget auto-discovers a `weather.*` entity
+     (falling back to open-meteo with Home Assistant's own configured location), so there's nothing to
+     set for it either.
    - `Briefing` - language, and which widgets run and in what order - see
      [Configuration](https://github.com/ikkentim/woosim-printer#configuration) in the main README.
 4. Start the add-on, then wire up a Home Assistant automation using the MQTT entities below to trigger

@@ -9,6 +9,11 @@
   port - with no dependency on `ReceiptPrinter.Serial`/`.Shared` and no knowledge of receipts, JSON,
   or ESC/POS. This is the exact contract the planned ESP32 firmware has to implement (see
   `docs/HARDWARE.md`). No add-on config changes; `NetworkSerialService` must be updated in lockstep.
+- The weather widget now pulls current conditions and today's high/low from Home Assistant's own
+  weather integration - it auto-discovers the first `weather.*` entity (no new config) and asks the
+  `weather.get_forecasts` service for the daily high/low. The previous open-meteo path is kept as a
+  fallback for when Home Assistant is unreachable or has no weather entity, still using the
+  latitude/longitude Home Assistant has configured.
 
 ## 1.3.0
 

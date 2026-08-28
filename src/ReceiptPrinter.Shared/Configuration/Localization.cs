@@ -23,6 +23,8 @@ public static class Localization
         ["weather.min"] = ("Min", "Min"),
         ["weather.clear"] = ("Helder", "Clear"),
         ["weather.partly_cloudy"] = ("Half bewolkt", "Partly cloudy"),
+        ["weather.cloudy"] = ("Bewolkt", "Cloudy"),
+        ["weather.windy"] = ("Winderig", "Windy"),
         ["weather.fog"] = ("Mist", "Fog"),
         ["weather.drizzle"] = ("Motregen", "Drizzle"),
         ["weather.rain"] = ("Regen", "Rain"),

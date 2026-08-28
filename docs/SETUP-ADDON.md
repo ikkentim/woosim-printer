@@ -40,7 +40,7 @@ Open the add-on's **Configuration** tab. Everything is grouped to match the app'
 - **`HomeAssistant`** section:
   - `TodoEntityId` / `TodoAttributeName` for the to-do list
   - Entity IDs feeding your Energy dashboard (`SolarProductionEntityId`, `GridImportEntityIds`/`GridExportEntityIds`, `GasEntityId`)
-  - **No `BaseUrl`/`Token` to fill in here**: this add-on has `homeassistant_api: true`, so it talks to Home Assistant through Supervisor's own proxy with a scoped token automatically, and reads Home Assistant's own configured latitude/longitude for the weather widget
+  - **No `BaseUrl`/`Token` to fill in here**: this add-on has `homeassistant_api: true`, so it talks to Home Assistant through Supervisor's own proxy with a scoped token automatically. The weather widget also needs nothing set - it auto-discovers a `weather.*` entity, falling back to open-meteo with Home Assistant's own configured location
 - **`Briefing`** section:
   - `Language` - `Nl` or `En`
   - `Widgets` - which to run and in what order (see [Configuration](CONFIGURATION.md))
