@@ -5,9 +5,8 @@ slug: receiptprinter_service
 url: https://github.com/ikkentim/woosim-printer
 description: >-
   Daily briefing / to-do printer for a Woosim receipt printer, triggered from
-  Home Assistant automations over MQTT - prints over the network to
-  ReceiptPrinter.NetworkSerialService, which runs on the PC with the actual
-  printer wired up over serial.
+  Home Assistant automations over MQTT - prints over the network to the ESP32
+  firmware next to the printer (or a PC running ReceiptPrinter.NetworkSerialService).
 arch:
   - amd64
   - aarch64

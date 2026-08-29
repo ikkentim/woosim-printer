@@ -1,10 +1,32 @@
 name: Build and publish add-on
 
+# Push / PR: build both arches with --test (validation only, nothing published).
+# Release published: build and push, tagged with config.yaml's `version` + `latest`
+#   -> bump `version` in config.yaml, commit, then cut a GitHub Release for that tag.
+#
+# TODO: home-assistant/builder (monolithic) is deprecated. Migrate to the composable
+#   home-assistant/builder/actions/{prepare-multi-arch-matrix,build-image,publish-multi-arch-manifest}.
+#   That needs BUILD_FROM wired up per-arch and the io.hass.* labels handled, so it's
+#   a separate change with a CI test run - not done in this pass.
+
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "firmware/**"
+      - ".github/workflows/lint.yaml"
   pull_request:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - "firmware/**"
+      - ".github/workflows/lint.yaml"
+  release:
+    types: [published]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,11 +37,12 @@ jobs:
     runs-on: ubuntu-latest
     name: Build ${{ matrix.arch }}
     strategy:
+      fail-fast: false
       matrix:
         arch: ["amd64", "aarch64"]
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4.1.2
+        uses: actions/checkout@v5
 
       - name: Get add-on information
         id: info
@@ -27,8 +50,9 @@ jobs:
         with:
           path: "."
 
+      # Only a published release actually pushes; everything else is a --test build.
       - name: Log in to GitHub Container Registry
-        if: github.event_name == 'push'
+        if: github.event_name == 'release'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -36,10 +60,10 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build ${{ matrix.arch }} image
-        uses: home-assistant/builder@2026.02.1
+        uses: home-assistant/builder@2026.06.0
         with:
           args: |
-            ${{ github.event_name != 'push' && '--test' || '' }} \
+            ${{ github.event_name != 'release' && '--test' || '' }} \
             --${{ matrix.arch }} \
             --target . \
             --image "$(echo ${{ steps.info.outputs.image }} | cut -d'/' -f3)" \
