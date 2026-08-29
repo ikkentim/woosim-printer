@@ -16,7 +16,7 @@ Everything (printer transport, Home Assistant, the briefing itself) is a single 
 - **`Type`** - `serial` or `network`
 - **`Port`** - serial port name (e.g., `COM3` on Windows, `/dev/ttyUSB0` on Linux)
 - **`Baud`** - serial baud rate (default: `9600`)
-- **`NetworkHost`** - network service host:port (e.g., `ReceiptPrinter.NetworkSerialService`'s `host:port`)
+- **`NetworkHost`** - `host:port` of the printer host: the [ESP32 firmware](../firmware/) (e.g. `printer.local:5251`) or a PC running `ReceiptPrinter.NetworkSerialService`
 
 ### HomeAssistant
 

@@ -6,7 +6,7 @@ This folder contains detailed documentation for the Receipt Printer project. Sta
 
 - **I want to install and run the add-on** → [Running as a Home Assistant add-on](SETUP-ADDON.md)
 - **I want to run it standalone** → [Running the CLI](RUNNING-CLI.md)
-- **I want to build/flash the ESP32 firmware** → [Hardware plan](HARDWARE.md) and [`firmware/`](../firmware/)
+- **I want to build/flash the ESP32 firmware** → [Hardware](HARDWARE.md) and [`firmware/`](../firmware/)
 
 ## Detailed guides
 
@@ -17,5 +17,5 @@ This folder contains detailed documentation for the Receipt Printer project. Sta
 
 ## Hardware
 
-- [Hardware plan](HARDWARE.md) - moving the printer to a standalone ESP32, parts list, wiring diagram, safety notes
+- [Hardware](HARDWARE.md) - the ESP32 printer: parts list, wiring, RS-232 level shifting + crossover, flashing
 - [`firmware/`](../firmware/) - the ESP32 firmware (PlatformIO); dumb HTTP -> UART bridge, see [`firmware/README.md`](../firmware/README.md)

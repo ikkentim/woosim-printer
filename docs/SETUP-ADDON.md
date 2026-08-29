@@ -1,18 +1,24 @@
 # Running as a Home Assistant add-on
 
-The Service doesn't need to run on the same machine as the printer - it just needs network access to `ReceiptPrinter.NetworkSerialService`:
+The Service just needs network access to whatever is wired to the printer - normally the [ESP32 firmware](../firmware/):
 
 ```
-Home Assistant (add-on)                    PC (has the printer wired up over serial)
-ReceiptPrinter.Service      --HTTP-->      ReceiptPrinter.NetworkSerialService --serial--> Woosim printer
-(MQTT-triggered,                           (copies the POSTed ESC/POS bytes
- HA polling, TODO-note checker,             straight to the serial port)
+Home Assistant (add-on)                    next to the printer
+ReceiptPrinter.Service      --HTTP-->      ESP32 firmware  --UART--> MAX3232 --RS-232--> Woosim printer
+(MQTT-triggered,                           (streams the POSTed
+ HA polling, TODO-note checker,             ESC/POS bytes to the UART)
  Receipt -> ESC/POS encoding)
 ```
 
+`ReceiptPrinter.NetworkSerialService` on a PC speaks the same protocol and can stand in for the ESP32.
+
 ## Setup steps
 
-### 1. On the PC with the printer
+### 1. Stand up the printer host
+
+Flash and wire the [ESP32 firmware](../firmware/) (see [Hardware](HARDWARE.md)). It advertises `printer.local` and listens on port `5251`.
+
+Or, for a PC with a USB-serial adapter instead:
 
 ```bash
 cd src/ReceiptPrinter.NetworkSerialService

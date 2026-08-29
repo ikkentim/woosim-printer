@@ -15,6 +15,6 @@ cd src/ReceiptPrinter.Service
 dotnet run
 ```
 
-By default it prints with `Printer:Type=network`, i.e. it expects `ReceiptPrinter.NetworkSerialService` to be reachable at `Printer:NetworkHost`.
+By default it prints with `Printer:Type=network`, i.e. it expects the printer host (the [ESP32 firmware](../firmware/), or `ReceiptPrinter.NetworkSerialService`) to be reachable at `Printer:NetworkHost`.
 
 See [Configuration](CONFIGURATION.md) for all configuration options.

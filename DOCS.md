@@ -7,25 +7,25 @@ flow, etc.) - this covers just the add-on.
 
 ## How it fits together
 
-The printer itself is still wired up over serial to a PC, not to Home Assistant. This add-on doesn't talk
-to the printer directly - it builds the receipt, encodes it to raw ESC/POS bytes, and POSTs those to
-`ReceiptPrinter.NetworkSerialService` (a small program you run on that PC), which copies them straight to
-the serial port.
+This add-on doesn't talk to the printer directly - it builds the receipt, encodes it to raw ESC/POS
+bytes, and POSTs those to a small HTTP endpoint next to the printer, which streams them to the wire.
+That endpoint is normally the ESP32 firmware (see the main repo's `firmware/`); a PC running
+`ReceiptPrinter.NetworkSerialService` with a USB-serial adapter works too.
 
 ```
-Home Assistant (this add-on)                PC (has the printer wired up over serial)
-ReceiptPrinter.Service      --HTTP-->       ReceiptPrinter.NetworkSerialService --serial--> Woosim printer
+Home Assistant (this add-on)             next to the printer
+ReceiptPrinter.Service    --HTTP-->      ESP32 firmware --UART--> MAX3232 --RS-232--> Woosim printer
 ```
 
 ## Setup
 
-1. On the PC with the printer: `cd src/ReceiptPrinter.NetworkSerialService && dotnet run` (see the main
-   repo). It listens on port `5251` by default.
+1. Have the printer host running: flash/wire the ESP32 firmware (see the main repo), or on a PC with the
+   printer `cd src/ReceiptPrinter.NetworkSerialService && dotnet run`. Either listens on port `5251`.
 2. A broker set up in Home Assistant (e.g. the official Mosquitto add-on) - **required**, since MQTT is
    the only way to trigger this add-on at all.
 3. Install this add-on and open its **Configuration** tab. Everything is grouped to match the app's
    settings directly:
-   - `Printer.NetworkHost` - that PC's `host:port` (e.g. `192.168.1.50:5251`).
+   - `Printer.NetworkHost` - the printer host's `host:port` (e.g. `printer.local:5251` for the ESP32).
    - `HomeAssistant` - `TodoEntityId` etc. for the to-do list and Energy dashboard entities, per the main
      README. There's nothing else to fill in here: this add-on already has `homeassistant_api: true`, so
      it talks to Home Assistant through Supervisor's own proxy with a scoped token automatically - no

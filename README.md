@@ -1,19 +1,15 @@
 # Woosim Receipt Printer
 
-Reviving an old Woosim serial thermal receipt printer (salvaged from a photobooth) and hooking it up to a daily briefing / to-do printout - date, weather, calendar, to-do list, and yesterday's energy usage - driven by Home Assistant, with a longer-term goal of running the printer standalone on an ESP32 over WiFi instead of a PC.
+Reviving an old Woosim serial thermal receipt printer (salvaged from a photobooth) and hooking it up to a daily briefing / to-do printout - date, weather, calendar, to-do list, and yesterday's energy usage - driven by Home Assistant. The printer runs standalone on an ESP32 over WiFi ([`firmware/`](firmware/)); no PC in the path.
 
 This repository doubles as a Home Assistant **add-on repository**.
 
-## Status
+## How it fits together
 
-- [x] Printer talks over RS-232 (COM3, 9600 baud) via a USB-to-serial adapter.
-- [x] Receipts are built as plain data (a `Receipt` of `IElement`s) and handed to an `IReceiptPrinter` - callers never touch ESC/POS commands or connection state directly.
-- [x] Daily briefing printout: date, weather, calendar, to-do list, energy usage - each section is a self-contained "widget" behind `IBriefingWidget`. Language (Dutch/English) and widget order are configurable.
-- [x] To-do list sourced from Apple Reminders via an iOS Shortcut pushing to a Home Assistant webhook.
-- [x] Calendar events sourced from Home Assistant's `caldav` integration (iCloud calendar).
-- [x] Energy usage pulled from Home Assistant's long-term statistics via its WebSocket API.
-- [x] `ReceiptPrinter.Service` - MQTT-triggered background service with a "new to-do → print its own note" checker, runs anywhere on the network and prints via `ReceiptPrinter.NetworkSerialService` on the PC.
-- [x] Move the printer off the PC onto a standalone ESP32 - [`firmware/`](firmware/) (D1 Mini ESP32, HTTP -> UART bridge) verified end to end. See [Hardware plan](docs/HARDWARE.md).
+- Receipts are built as plain data (a `Receipt` of `IElement`s) and handed to an `IReceiptPrinter` - callers never touch ESC/POS commands or connection state directly.
+- The daily briefing is a stack of self-contained widgets behind `IBriefingWidget` (date, weather, calendar, to-do list, energy usage); language (Dutch/English) and widget order are configurable.
+- `ReceiptPrinter.Service` is an MQTT-triggered background worker (briefing on demand, plus a "new to-do → print its own note" checker) that runs anywhere on the network.
+- It encodes the receipt to ESC/POS and POSTs the bytes to the [ESP32 firmware](firmware/) next to the printer, which streams them straight to the UART. Data sources: to-do list from Apple Reminders via an iOS Shortcut → Home Assistant webhook; calendar from HA's `caldav` integration; energy from HA long-term statistics over its WebSocket API.
 
 ## Quick start
 
@@ -50,7 +46,7 @@ The [docs/](docs/) folder contains detailed guides organized by topic:
 | [SERVICE.md](docs/SERVICE.md) | Background service details and to-do note checker |
 | [MQTT.md](docs/MQTT.md) | MQTT entities and custom print formatting (ReceiptMarkdown) |
 | [TODO-DATA-FLOW.md](docs/TODO-DATA-FLOW.md) | Why CalDAV doesn't work and how the to-do webhook is set up |
-| [HARDWARE.md](docs/HARDWARE.md) | ESP32 migration plan, parts list, wiring diagram, safety notes, flashing the firmware |
+| [HARDWARE.md](docs/HARDWARE.md) | The ESP32 printer: parts, wiring, level shifting, flashing the firmware |
 
 ## License
 

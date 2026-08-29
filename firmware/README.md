@@ -1,6 +1,6 @@
 # ESP32 printer firmware
 
-Turns a LOLIN **D1 Mini ESP32** into the standalone HTTP -> UART bridge planned
+Turns a LOLIN **D1 Mini ESP32** into the standalone HTTP -> UART bridge described
 in [`../docs/HARDWARE.md`](../docs/HARDWARE.md). It replaces the PC +
 `ReceiptPrinter.NetworkSerialService`; the sender (`NetworkWoosimPrinter`) talks
 to it unchanged.
@@ -34,6 +34,9 @@ D1 Mini ESP32            SP3232 / MAX3232 module
 Board is powered via its `VCC`/5V pin from the buck converter; the module runs
 off the board's regulated `3V3` pin. RTS/CTS unused.
 
+The RS-232 side (module DE-9 <-> printer) needs pins **2 and 3 crossed** - see
+[`../docs/HARDWARE.md`](../docs/HARDWARE.md#rs-232-crossover).
+
 ## First flash (USB)
 
 Uses [PlatformIO](https://platformio.org/) (`pip install platformio`, or the
@@ -46,14 +49,24 @@ pio run -t upload
 pio device monitor                              # 115200 baud
 ```
 
+Auto-detect can pick the wrong serial port (e.g. a motherboard `COM1`) - pass
+`--upload-port COMx` (or `/dev/ttyUSBx`) if the upload targets the wrong one, and
+hold **BOOT** if it hangs at `Connecting....`.
+
 On boot the monitor prints the assigned IP. The device also advertises
 `printer.local` over mDNS, which is what the sender defaults to
-(`printer.local:5251`).
+(`printer.local:5251`). The hostname is `MDNS_HOSTNAME` in `config.h`.
 
 ## Later flashes (OTA, over WiFi)
 
-Uncomment the `espota` block in [`platformio.ini`](platformio.ini) (match
-`--auth` to `OTA_PASSWORD` in `config.h`), then `pio run -t upload`.
+```bash
+cp ota.local.ini.example ota.local.ini    # then set --auth to match OTA_PASSWORD in config.h
+pio run -e ota -t upload
+```
+
+`ota.local.ini` is git-ignored (`*.local.ini`) so the OTA password never lands in
+a tracked file; `platformio.ini` pulls it in via `extra_configs`. Plain
+`pio run -t upload` stays on USB.
 
 ## Test without the app
 
