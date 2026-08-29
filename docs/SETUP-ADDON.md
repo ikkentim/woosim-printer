@@ -36,7 +36,7 @@ In Home Assistant:
 
 Open the add-on's **Configuration** tab. Everything is grouped to match the app's settings directly:
 
-- **`Printer.NetworkHost`** - the PC's `host:port` (e.g. `192.168.1.50:5251`)
+- **`Printer.NetworkHost`** - `host:port` of whatever speaks the wire protocol below: the PC running `NetworkSerialService` (e.g. `192.168.1.50:5251`), or the ESP32 running the [firmware](../firmware/) (`printer.local:5251`)
 - **`HomeAssistant`** section:
   - `TodoEntityId` / `TodoAttributeName` for the to-do list
   - Entity IDs feeding your Energy dashboard (`SolarProductionEntityId`, `GridImportEntityIds`/`GridExportEntityIds`, `GasEntityId`)
@@ -61,7 +61,7 @@ Supervisor just pulls the prebuilt image rather than building it on-device (this
 
 ## Wire protocol
 
-`NetworkSerialService` speaks the same trivial wire protocol the real ESP32 firmware will, so it's a drop-in stand-in until the firmware exists:
+`NetworkSerialService` and the [ESP32 firmware](../firmware/) speak the same trivial wire protocol, so they're interchangeable - run whichever is wired to the printer:
 
 - `POST /print` with an `application/octet-stream` body of raw ESC/POS bytes - the service copies the body straight to the serial port, byte for byte. All receipt formatting happens sender-side in [`EscPosEncoder`](../src/ReceiptPrinter.Shared/Printers/EscPosEncoder.cs); this side needs no knowledge of receipts, JSON, or ESC/POS.
 - `GET /health` - returns `200 ok` without touching the printer (used for the "reachable" status).

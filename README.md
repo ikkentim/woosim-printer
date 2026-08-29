@@ -13,7 +13,7 @@ This repository doubles as a Home Assistant **add-on repository**.
 - [x] Calendar events sourced from Home Assistant's `caldav` integration (iCloud calendar).
 - [x] Energy usage pulled from Home Assistant's long-term statistics via its WebSocket API.
 - [x] `ReceiptPrinter.Service` - MQTT-triggered background service with a "new to-do → print its own note" checker, runs anywhere on the network and prints via `ReceiptPrinter.NetworkSerialService` on the PC.
-- [ ] Move the printer off the PC onto a standalone ESP32 (parts ordered - see [Hardware plan](docs/HARDWARE.md)).
+- [x] Move the printer off the PC onto a standalone ESP32 - [`firmware/`](firmware/) (D1 Mini ESP32, HTTP -> UART bridge) verified end to end. See [Hardware plan](docs/HARDWARE.md).
 
 ## Quick start
 
@@ -30,9 +30,11 @@ A multi-project solution ([`src/ReceiptPrinter.slnx`](src/ReceiptPrinter.slnx)) 
 - **[`ReceiptPrinter.Shared`](src/ReceiptPrinter.Shared)** - receipt data model, the `Receipt` -> ESC/POS encoder, widget contracts, Home Assistant integration, configuration
 - **[`ReceiptPrinter.Serial`](src/ReceiptPrinter.Serial)** - drives the Woosim printer over serial (opens the port, writes the encoded bytes)
 - **[`ReceiptPrinter.Network`](src/ReceiptPrinter.Network)** - network transport (POSTs the encoded ESC/POS bytes over HTTP)
-- **[`ReceiptPrinter.NetworkSerialService`](src/ReceiptPrinter.NetworkSerialService)** - dumb HTTP-to-serial passthrough that runs next to the printer (ESP32 firmware stand-in)
+- **[`ReceiptPrinter.NetworkSerialService`](src/ReceiptPrinter.NetworkSerialService)** - dumb HTTP-to-serial passthrough that runs next to the printer; C# reference for the firmware contract, still usable as a PC-side stand-in
 - **[`ReceiptPrinter.CLI`](src/ReceiptPrinter.CLI)** - console app for manual use
 - **[`ReceiptPrinter.Service`](src/ReceiptPrinter.Service)** - MQTT-triggered background service
+
+Plus **[`firmware/`](firmware/)** (not part of the .NET solution) - the ESP32 firmware that replaces `NetworkSerialService` on real hardware; same `POST /print` / `GET /health` contract, streamed straight to the UART. See [`firmware/README.md`](firmware/README.md).
 
 See [docs/](docs/) for detailed architecture and feature documentation.
 
@@ -48,7 +50,7 @@ The [docs/](docs/) folder contains detailed guides organized by topic:
 | [SERVICE.md](docs/SERVICE.md) | Background service details and to-do note checker |
 | [MQTT.md](docs/MQTT.md) | MQTT entities and custom print formatting (ReceiptMarkdown) |
 | [TODO-DATA-FLOW.md](docs/TODO-DATA-FLOW.md) | Why CalDAV doesn't work and how the to-do webhook is set up |
-| [HARDWARE.md](docs/HARDWARE.md) | ESP32 migration plan, parts list, wiring diagram, safety notes |
+| [HARDWARE.md](docs/HARDWARE.md) | ESP32 migration plan, parts list, wiring diagram, safety notes, flashing the firmware |
 
 ## License
 

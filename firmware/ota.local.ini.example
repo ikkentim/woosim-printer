@@ -1,0 +1,9 @@
+; Copy to  ota.local.ini  (git-ignored) and set the auth to match OTA_PASSWORD
+; in include/config.h. Then flash over WiFi:  pio run -e ota -t upload
+;
+; Plain  pio run -t upload  ignores this and flashes over USB.
+
+[env:ota]
+upload_protocol = espota
+upload_port = woosim-printer.local
+upload_flags = --auth=change-me
